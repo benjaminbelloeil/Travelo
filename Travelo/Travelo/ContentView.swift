@@ -8,14 +8,29 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var selectedTab: Tab = .home
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        VStack(spacing: 0) {
+            // Main content area
+            Group {
+                switch selectedTab {
+                case .home:
+                    HomeView()
+                case .map:
+                    MapView()
+                case .guide:
+                    GuideView()
+                case .profile:
+                    ProfileView()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            
+            // Bottom navigation
+            BottomNavigationView(selectedTab: $selectedTab)
         }
-        .padding()
+        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 }
 
