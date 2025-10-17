@@ -13,6 +13,9 @@ struct StartView: View {
     private let images = ["HomeImage", "HomeImage2", "HomeImage3", "HomeImage4"]
     private let timer = Timer.publish(every: 4, on: .main, in: .common).autoconnect()
     
+    // Callback to notify when user taps Start
+    var onStart: (() -> Void)?
+
     var body: some View {
         GeometryReader { geometry in
             ZStack {
@@ -54,16 +57,20 @@ struct StartView: View {
                     
                     // MARK: Start Button
                     Button(action: {
-                        // Navigate to HomeView
+                        onStart?()
                     }) {
                         Text("START")
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundColor(.white)
-                            .frame(width: 150, height: 50)
-                            .background(Color("Primary"))
-                            .clipShape(Capsule())
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(
+                                Capsule()
+                                    .fill(Color.white.opacity(0.3))
+                            )
                     }
-                    .padding(.bottom, 60)
+                    .padding(.horizontal, 28)
+                    .padding(.bottom, 10)
                 }
             }
             .onReceive(timer) { _ in
