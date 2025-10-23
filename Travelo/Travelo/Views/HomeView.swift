@@ -9,11 +9,16 @@ import SwiftUI
 import Combine
 
 struct HomeView: View {
-    @State private var completedSteps: [Bool] = [true, false, false]
     @EnvironmentObject var countryManager: CountryManager
+    @StateObject private var checkStore = CheckStateStore(countryCode: "IT", templateVersion: 1)
     
     // Callback to notify when user taps on country name to change country
     var onCountryTap: (() -> Void)?
+    
+    var steps: [StepItem] {
+        guard let selectedCountry = countryManager.selectedCountry else { return [] }
+        return StepItem.steps(for: selectedCountry.code).sorted { $0.order < $1.order }
+    }
     
     var body: some View {
         NavigationView {
@@ -147,39 +152,18 @@ struct HomeView: View {
                         }
                         .padding(.horizontal, 20)
                         
-                        VStack(spacing: 0) { // Changed to 0 spacing for continuous timeline
-                            StepItem(
-                                index: 0,
-                                date: "12 oct",
-                                title: "Codice Fiscale",
-                                description: "Required for opening a bank account and signing rental contracts...",
-                                isCompleted: $completedSteps[0],
-                                canToggle: true,
-                                isActive: !completedSteps[0],
-                                isLastItem: false
-                            )
-                            
-                            StepItem(
-                                index: 1,
-                                date: "18 oct",
-                                title: "Permesso di Soggiorno",
-                                description: "Submit application within 8 days of arrival.",
-                                isCompleted: $completedSteps[1],
-                                canToggle: completedSteps[0], // Can only check if previous is complete
-                                isActive: completedSteps[0] && !completedSteps[1],
-                                isLastItem: false
-                            )
-                            
-                            StepItem(
-                                index: 2,
-                                date: "25 oct",
-                                title: "Tessera Sanitaria",
-                                description: "Needed to access Italy's public healthcare system.",
-                                isCompleted: $completedSteps[2],
-                                canToggle: completedSteps[1], // Can only check if previous is complete
-                                isActive: completedSteps[1] && !completedSteps[2],
-                                isLastItem: true
-                            )
+                        VStack(spacing: 0) {
+                            ForEach(Array(steps.enumerated()), id: \.element.id) { index, step in
+                                StepRow(
+                                    item: step,
+                                    isDone: checkStore.isDone(step.id),
+                                    onToggle: { checkStore.toggle(step.id) },
+                                    index: index,
+                                    isLastItem: index == steps.count - 1,
+                                    canToggle: index == 0 || checkStore.isDone(steps[index - 1].id),
+                                    isActive: (index == 0 || checkStore.isDone(steps[index - 1].id)) && !checkStore.isDone(step.id)
+                                )
+                            }
                         }
                         .padding(.horizontal, 20)
                     }
@@ -189,175 +173,14 @@ struct HomeView: View {
             }
             .navigationBarHidden(true)
             .background(Color.white)
-        }
-    }
-}
-
-struct StepItem: View {
-    let index: Int
-    let date: String
-    let title: String
-    let description: String
-    @Binding var isCompleted: Bool
-    let canToggle: Bool
-    let isActive: Bool
-    let isLastItem: Bool
-    @State private var animateTimeline = false
-    @State private var showDisabledFeedback = false
-    
-    var body: some View {
-        VStack(spacing: 0) {
-            HStack(alignment: .top, spacing: 12) {
-                // Date
-                VStack {
-                    Text(date)
-                        .font(.system(size: 18))
-                        .foregroundColor(.black)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(width: 60)
-                
-                // Timeline indicator - Modified structure
-                ZStack(alignment: .top) {
-                    // Vertical line that extends through the entire height
-                    if !isLastItem {
-                        Rectangle()
-                            .fill(isCompleted ? Color("Primary") : Color.gray.opacity(0.2))
-                            .frame(width: 3, height: 100) // Increased from 80 to 100 for more spacing
-                            .offset(y: 26) // Start from bottom of circle
-                            .animation(.easeInOut(duration: 0.4), value: isCompleted)
-                    }
-                    
-                    // Circle on top
-                    Group {
-                        if isCompleted {
-                            // Completed: solid Primary fill
-                            Circle()
-                                .fill(Color("Primary"))
-                                .frame(width: 26, height: 26)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white, lineWidth: 3)
-                                )
-                                .background(
-                                    Circle()
-                                        .fill(Color.white)
-                                        .frame(width: 32, height: 32)
-                                )
-                        } else if isActive {
-                            // Active (not completed): outlined ring (white fill, Primary stroke)
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 26, height: 26)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color("Primary"), lineWidth: 3)
-                                )
-                                .background(
-                                    Circle()
-                                        .fill(Color.white)
-                                        .frame(width: 32, height: 32)
-                                )
-                        } else {
-                            // Pending: gray fill
-                            Circle()
-                                .fill(Color.gray.opacity(0.3))
-                                .frame(width: 26, height: 26)
-                                .overlay(
-                                    Circle()
-                                        .stroke(Color.white, lineWidth: 3)
-                                )
-                                .background(
-                                    Circle()
-                                        .fill(Color.white)
-                                        .frame(width: 32, height: 32)
-                                )
-                        }
-                    }
-                    .scaleEffect(isActive ? 1.1 : 1.0)
-                    .animation(.easeInOut(duration: 0.3), value: isActive)
-                }
-                .frame(width: 32) // Fixed width for timeline column
-                
-                // Content - Extended to take more horizontal space
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(title)
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.black)
-                    
-                    Text(description)
-                        .font(.system(size: 14))
-                        .foregroundColor(.gray)
-                        .lineLimit(2)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading) // Take maximum available width
-                .padding(.trailing, 8) // Small padding before button
-                
-                // Interactive status button
-                Button(action: toggleCompletion) {
-                    Image(systemName: isCompleted ? "checkmark" : "xmark")
-                        .font(.system(size: 20, weight: .thin))
-                        .foregroundColor(isCompleted ? .green : (canToggle ? .gray : .gray.opacity(0.4)))
-                        .frame(width: 40, height: 40)
-                        .background(
-                            Circle()
-                                .fill(isCompleted ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))
-                        )
-                        .overlay(
-                            showDisabledFeedback && !canToggle ?
-                            Text("Complete previous step first")
-                                .font(.system(size: 12))
-                                .foregroundColor(.red)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(Color.white)
-                                .cornerRadius(6)
-                                .shadow(radius: 2)
-                                .offset(x: -100, y: 0)
-                                .transition(.opacity)
-                            : nil
-                        )
-                        .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isCompleted)
-                }
-                .buttonStyle(PlainButtonStyle())
-                .disabled(!canToggle && !isCompleted) // Can uncheck completed items but not check if previous isn't done
-            }
-            .frame(height: 100) // Increased from 80 to 100 for more spacing between steps
-        }
-    }
-    
-    private func toggleCompletion() {
-        // Check if can toggle
-        if !canToggle && !isCompleted {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                showDisabledFeedback = true
-            }
-            
-            // Haptic feedback for error
-            let notificationFeedback = UINotificationFeedbackGenerator()
-            notificationFeedback.notificationOccurred(.error)
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    showDisabledFeedback = false
+            .onAppear {
+                if let selectedCountry = countryManager.selectedCountry {
+                    checkStore.updateCountry(selectedCountry.code, templateVersion: 1)
                 }
             }
-            return
-        }
-        
-        withAnimation(.easeInOut(duration: 0.3)) {
-            isCompleted.toggle()
-        }
-        
-        // Add haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.impactOccurred()
-        
-        if isCompleted {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                withAnimation(.easeInOut(duration: 0.4)) {
-                    animateTimeline = true
+            .onChange(of: countryManager.selectedCountry?.code) { newCode in
+                if let code = newCode {
+                    checkStore.updateCountry(code, templateVersion: 1)
                 }
             }
         }
