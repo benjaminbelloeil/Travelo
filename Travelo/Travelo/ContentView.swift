@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var showCountrySelection: Bool = false
     @State private var showCountrySelectionFromHome: Bool = false
     @StateObject private var countryManager = CountryManager()
+    @StateObject private var stepStateManager = StepStateManager()
     
     var body: some View {
         ZStack {
@@ -70,12 +71,18 @@ struct ContentView: View {
                     BottomNavigationView(selectedTab: $selectedTab)
                 }
                 .environmentObject(countryManager)
+                .environmentObject(stepStateManager)
                 .ignoresSafeArea(.keyboard, edges: .bottom)
                 .transition(.asymmetric(
                     insertion: .opacity, // Simple fade in for main app
                     removal: .opacity
                 ))
                 .animation(.easeInOut(duration: 0.45), value: hasSeenStartThisSession)
+                .onChange(of: countryManager.selectedCountry?.code) { newCode in
+                    if let code = newCode {
+                        stepStateManager.updateCountry(code, templateVersion: 1)
+                    }
+                }
             }
         }
     }

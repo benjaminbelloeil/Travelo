@@ -15,8 +15,20 @@ struct StepRow: View {
     let isLastItem: Bool
     let canToggle: Bool
     let isActive: Bool
+    let showStepNumber: Bool
     
     @State private var showDisabledFeedback = false
+    
+    init(item: StepItem, isDone: Bool, onToggle: @escaping () -> Void, index: Int, isLastItem: Bool, canToggle: Bool, isActive: Bool, showStepNumber: Bool = false) {
+        self.item = item
+        self.isDone = isDone
+        self.onToggle = onToggle
+        self.index = index
+        self.isLastItem = isLastItem
+        self.canToggle = canToggle
+        self.isActive = isActive
+        self.showStepNumber = showStepNumber
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -94,15 +106,26 @@ struct StepRow: View {
                 
                 // Content
                 VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        if showStepNumber {
+                            Text("Step \(item.stepNumber)")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundColor(Color("Primary"))
+                        }
+                        Spacer()
+                    }
+                    
                     Text(item.title)
                         .font(.system(size: 18, weight: .bold))
                         .foregroundColor(.black)
+                        .multilineTextAlignment(.leading)
                     
                     Text(item.subtitle)
                         .font(.system(size: 14))
                         .foregroundColor(.gray)
                         .lineLimit(2)
                         .fixedSize(horizontal: false, vertical: true)
+                        .multilineTextAlignment(.leading)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.trailing, 8)

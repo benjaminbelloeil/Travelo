@@ -10,14 +10,18 @@ import Combine
 
 struct HomeView: View {
     @EnvironmentObject var countryManager: CountryManager
-    @StateObject private var checkStore = CheckStateStore(countryCode: "IT", templateVersion: 1)
+    @EnvironmentObject var stepStateManager: StepStateManager
     
     // Callback to notify when user taps on country name to change country
     var onCountryTap: (() -> Void)?
     
-    var steps: [StepItem] {
+    var allSteps: [StepItem] {
         guard let selectedCountry = countryManager.selectedCountry else { return [] }
         return StepItem.steps(for: selectedCountry.code).sorted { $0.order < $1.order }
+    }
+    
+    var visibleSteps: [StepItem] {
+        stepStateManager.getVisibleStepsForHome(allSteps: allSteps)
     }
     
     var body: some View {
@@ -53,7 +57,7 @@ struct HomeView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 20)
                     
-                    // Maldives Island section
+                    // Destination card section
                     VStack(alignment: .leading, spacing: 16) {
                         
                         // Destination card (reduced height by 20%)
@@ -153,19 +157,24 @@ struct HomeView: View {
                         .padding(.horizontal, 20)
                         
                         VStack(spacing: 0) {
-                            ForEach(Array(steps.enumerated()), id: \.element.id) { index, step in
+                            ForEach(Array(visibleSteps.enumerated()), id: \.element.id) { index, step in
                                 StepRow(
                                     item: step,
-                                    isDone: checkStore.isDone(step.id),
-                                    onToggle: { checkStore.toggle(step.id) },
+                                    isDone: stepStateManager.isDone(step.id),
+                                    onToggle: {
+                                        withAnimation(.easeInOut(duration: 0.3)) {
+                                            stepStateManager.toggle(step.id)
+                                        }
+                                    },
                                     index: index,
-                                    isLastItem: index == steps.count - 1,
-                                    canToggle: index == 0 || checkStore.isDone(steps[index - 1].id),
-                                    isActive: (index == 0 || checkStore.isDone(steps[index - 1].id)) && !checkStore.isDone(step.id)
+                                    isLastItem: index == visibleSteps.count - 1,
+                                    canToggle: stepStateManager.canToggleStep(step, in: allSteps),
+                                    isActive: stepStateManager.isStepActive(step, in: allSteps)
                                 )
                             }
                         }
                         .padding(.horizontal, 20)
+                        .animation(.easeInOut(duration: 0.4), value: visibleSteps.map { $0.id })
                     }
                     
                     Spacer(minLength: 100) // Space for bottom navigation
@@ -175,12 +184,12 @@ struct HomeView: View {
             .background(Color.white)
             .onAppear {
                 if let selectedCountry = countryManager.selectedCountry {
-                    checkStore.updateCountry(selectedCountry.code, templateVersion: 1)
+                    stepStateManager.updateCountry(selectedCountry.code, templateVersion: 1)
                 }
             }
             .onChange(of: countryManager.selectedCountry?.code) { newCode in
                 if let code = newCode {
-                    checkStore.updateCountry(code, templateVersion: 1)
+                    stepStateManager.updateCountry(code, templateVersion: 1)
                 }
             }
         }
@@ -190,4 +199,5 @@ struct HomeView: View {
 #Preview {
     HomeView()
         .environmentObject(CountryManager())
+        .environmentObject(StepStateManager())
 }
