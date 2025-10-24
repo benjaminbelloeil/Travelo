@@ -62,12 +62,17 @@ struct ContentView: View {
                 .transition(.opacity) // Simple fade out, no sliding
             } else {
                 TabView(selection: $selectedTab) {
-                    HomeView {
-                        // Callback when user taps on country name to change country
-                        withAnimation(.spring(response: 0.5, dampingFraction: 0.9, blendDuration: 0.2)) {
-                            showCountrySelectionFromHome = true
+                    HomeView()
+                        .onCountryTap {
+                            // Callback when user taps on country name to change country
+                            withAnimation(.spring(response: 0.5, dampingFraction: 0.9, blendDuration: 0.2)) {
+                                showCountrySelectionFromHome = true
+                            }
                         }
-                    }
+                        .onProfileTap {
+                            // Callback when user taps on profile avatar to go to profile tab
+                            selectedTab = .profile
+                        }
                     .tabItem {
                         Image(systemName: Tab.home.icon)
                         Text(Tab.home.rawValue)

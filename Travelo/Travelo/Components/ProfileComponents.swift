@@ -12,6 +12,14 @@ struct ProfileImageView: View {
     let imageData: Data?
     let initials: String
     let size: CGFloat
+    let showCameraOverlay: Bool
+    
+    init(imageData: Data?, initials: String, size: CGFloat, showCameraOverlay: Bool = true) {
+        self.imageData = imageData
+        self.initials = initials
+        self.size = size
+        self.showCameraOverlay = showCameraOverlay
+    }
     
     var body: some View {
         ZStack {
@@ -49,16 +57,18 @@ struct ProfileImageView: View {
                     }
             }
             
-            // Camera overlay
-            Circle()
-                .fill(Color.black.opacity(0.3))
-                .frame(width: size, height: size)
-                .overlay {
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: size * 0.2))
-                        .foregroundColor(.white)
-                }
-                .opacity(imageData == nil ? 0 : 0.8)
+            // Camera overlay (only shown when editing)
+            if showCameraOverlay && imageData != nil {
+                Circle()
+                    .fill(Color.black.opacity(0.3))
+                    .frame(width: size, height: size)
+                    .overlay {
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: size * 0.2))
+                            .foregroundColor(.white)
+                    }
+                    .opacity(0.8)
+            }
         }
         .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
     }
@@ -69,30 +79,36 @@ struct ProfileCompletionCard: View {
     let completionPercentage: Double
     let action: () -> Void
     
+    private var isComplete: Bool {
+        completionPercentage >= 1.0
+    }
+    
     var body: some View {
         Button(action: action) {
             HStack(spacing: 16) {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Complete Your Profile")
+                    Text(isComplete ? "Profile Complete!" : "Complete Your Profile")
                         .font(.headline)
                         .foregroundColor(.primary)
                     
-                    Text("\(Int(completionPercentage * 100))% Complete")
+                    Text(isComplete ? "All information filled" : "\(Int(completionPercentage * 100))% Complete")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
                     
-                    ProgressView(value: completionPercentage)
-                        .progressViewStyle(LinearProgressViewStyle(tint: Color("Primary")))
+                    if !isComplete {
+                        ProgressView(value: completionPercentage)
+                            .progressViewStyle(LinearProgressViewStyle(tint: Color("Primary")))
+                    }
                 }
                 
                 Spacer()
                 
-                Image(systemName: "arrow.right.circle.fill")
+                Image(systemName: isComplete ? "checkmark.circle.fill" : "arrow.right.circle.fill")
                     .font(.title2)
-                    .foregroundColor(Color("Primary"))
+                    .foregroundColor(isComplete ? .green : Color("Primary"))
             }
             .padding()
-            .background(Color("Primary").opacity(0.05))
+            .background(Color("Primary").opacity(isComplete ? 0.03 : 0.05))
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(PlainButtonStyle())

@@ -11,12 +11,37 @@ import Combine
 struct HomeView: View {
     @EnvironmentObject var countryManager: CountryManager
     @EnvironmentObject var stepStateManager: StepStateManager
+    @EnvironmentObject var profileManager: UserProfileManager
     
     // State for navigation through step groups
     @State private var currentStepGroup: Int = 0
     
     // Callback to notify when user taps on country name to change country
-    var onCountryTap: (() -> Void)?
+    var onCountryTap: (() -> Void)? = nil
+    
+    // Callback to notify when user taps on profile avatar
+    var onProfileTap: (() -> Void)? = nil
+    
+    // Dynamic greeting based on time
+    private var timeBasedGreeting: String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        switch hour {
+        case 0..<12:
+            return "Good morning"
+        case 12..<17:
+            return "Good afternoon"
+        case 17..<21:
+            return "Good evening"
+        default:
+            return "Good night"
+        }
+    }
+    
+    // User's display name or default
+    private var displayName: String {
+        let firstName = profileManager.userProfile.firstName.trimmingCharacters(in: .whitespacesAndNewlines)
+        return firstName.isEmpty ? "User" : firstName
+    }
     
     var allSteps: [StepItem] {
         guard let selectedCountry = countryManager.selectedCountry else { return [] }
@@ -50,27 +75,27 @@ struct HomeView: View {
                     // Header section
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("Good morning")
+                            Text(timeBasedGreeting)
                                 .font(.system(size: 20, weight: .medium))
                                 .foregroundColor(.gray)
                             
-                            Text("Hello, Benjamin!")
+                            Text("Hello, \(displayName)!")
                                 .font(.system(size: 28, weight: .heavy))
                                 .foregroundColor(.black)
                         }
                         
                         Spacer()
                         
-                        // Profile avatar (reduced size)
-                        Button(action: {}) {
-                            Circle()
-                                .fill(Color("Primary"))
-                                .frame(width: 48, height: 48)
-                                .overlay(
-                                    Image(systemName: "person.fill")
-                                        .font(.system(size: 20))
-                                        .foregroundColor(.white)
-                                )
+                        // Profile avatar (synced with ProfileView)
+                        Button(action: {
+                            onProfileTap?()
+                        }) {
+                            ProfileImageView(
+                                imageData: profileManager.userProfile.profileImageData,
+                                initials: profileManager.userProfile.initials,
+                                size: 48,
+                                showCameraOverlay: false
+                            )
                         }
                     }
                     .padding(.horizontal, 20)
@@ -298,8 +323,24 @@ struct HomeView: View {
     }
 }
 
+// MARK: - HomeView Extensions for Callbacks
+extension HomeView {
+    func onCountryTap(_ action: @escaping () -> Void) -> HomeView {
+        var view = self
+        view.onCountryTap = action
+        return view
+    }
+    
+    func onProfileTap(_ action: @escaping () -> Void) -> HomeView {
+        var view = self
+        view.onProfileTap = action
+        return view
+    }
+}
+
 #Preview {
     HomeView()
         .environmentObject(CountryManager())
         .environmentObject(StepStateManager())
+        .environmentObject(UserProfileManager())
 }

@@ -9,7 +9,7 @@ import SwiftUI
 import PhotosUI
 
 struct ProfileView: View {
-    @StateObject private var profileManager = UserProfileManager()
+    @EnvironmentObject var profileManager: UserProfileManager
     @EnvironmentObject var countryManager: CountryManager
     @State private var showingImagePicker = false
     @State private var showingEditProfile = false
@@ -25,7 +25,8 @@ struct ProfileView: View {
                         ProfileImageView(
                             imageData: profileManager.userProfile.profileImageData,
                             initials: profileManager.userProfile.initials,
-                            size: 120
+                            size: 120,
+                            showCameraOverlay: true
                         )
                         .onTapGesture {
                             showingImagePicker = true
@@ -54,13 +55,11 @@ struct ProfileView: View {
                             }
                         }
                         
-                        // Profile Completion Progress
-                        if !profileManager.isProfileComplete {
-                            ProfileCompletionCard(
-                                completionPercentage: profileManager.profileCompletionPercentage
-                            ) {
-                                showingEditProfile = true
-                            }
+                        // Profile Completion Progress - Always show until 100% complete
+                        ProfileCompletionCard(
+                            completionPercentage: profileManager.profileCompletionPercentage
+                        ) {
+                            showingEditProfile = true
                         }
                     }
                     .padding()
@@ -153,11 +152,11 @@ struct ProfileView: View {
                 EditProfileView(profileManager: profileManager)
             }
         }
-        .environmentObject(profileManager)
     }
 }
 
 #Preview {
     ProfileView()
         .environmentObject(CountryManager())
+        .environmentObject(UserProfileManager())
 }
