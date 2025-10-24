@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var showCountrySelectionFromHome: Bool = false
     @StateObject private var countryManager = CountryManager()
     @StateObject private var stepStateManager = StepStateManager()
+    @StateObject private var profileManager = UserProfileManager()
     
     // Computed property to determine if we should show onboarding
     private var shouldShowOnboarding: Bool {
@@ -104,6 +105,7 @@ struct ContentView: View {
                 .accentColor(Color("Primary"))
                 .environmentObject(countryManager)
                 .environmentObject(stepStateManager)
+                .environmentObject(profileManager)
                 .transition(.asymmetric(
                     insertion: .opacity, // Simple fade in for main app
                     removal: .opacity
