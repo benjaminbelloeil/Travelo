@@ -38,25 +38,54 @@ class LocationBasedPlacesService: NSObject, ObservableObject {
     
     func searchNearbyPlaces(around coordinate: CLLocationCoordinate2D) {
         isLoading = true
+        nearbyPlaces = [] // Clear existing places immediately
         
-        // Create multiple search requests for different types of places
+        // Expanded search with more specific and general terms
         let searchTypes = [
+            // Food & Dining
+            "restaurant",
+            "fast food",
+            "cafe",
+            "bakery",
+            "food",
+            
+            // Shopping & Essential Services
+            "store",
+            "grocery store", 
+            "supermarket",
+            "pharmacy",
+            "gas station",
+            "fuel",
+            
+            // Financial & Basic Services
+            "bank",
+            "ATM",
+            "post office",
+            
+            // Healthcare & Emergency
+            "hospital",
+            "clinic",
+            "urgent care",
+            
+            // Tourism & Recreation
             "tourist attraction",
-            "restaurant", 
             "museum",
             "park",
             "landmark",
-            "shopping",
-            "entertainment",
-            "cafe",
             "hotel",
-            "gas station",
-            "pharmacy",
-            "bank",
-            "hospital",
-            "library",
-            "church",
-            "school"
+            "lodging",
+            "accommodation",
+            "inn",
+            "motel",
+            
+            // Transportation
+            "airport",
+            "train station",
+            "bus stop",
+            
+            // Entertainment
+            "shopping center",
+            "mall"
         ]
         
         var allPlaces: [MKMapItem] = []
@@ -67,9 +96,10 @@ class LocationBasedPlacesService: NSObject, ObservableObject {
             
             let request = MKLocalSearch.Request()
             request.naturalLanguageQuery = searchType
+            // Significantly expanded search area
             request.region = MKCoordinateRegion(
                 center: coordinate,
-                span: MKCoordinateSpan(latitudeDelta: 0.15, longitudeDelta: 0.15)
+                span: MKCoordinateSpan(latitudeDelta: 0.25, longitudeDelta: 0.25)  // Much wider area
             )
             
             let search = MKLocalSearch(request: request)
@@ -77,29 +107,45 @@ class LocationBasedPlacesService: NSObject, ObservableObject {
                 defer { dispatchGroup.leave() }
                 
                 if let response = response {
-                    // Filter out places that are too far and get more results per category
+                    print("🔍 Found \(response.mapItems.count) results for '\(searchType)'")
+                    
+                    // Get places within expanded distance
                     let filteredPlaces = response.mapItems
                         .filter { item in
                             guard let location = item.placemark.location else { return false }
                             let distance = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
                                 .distance(from: location)
-                            return distance <= 75000 // Within 75km (expanded)
+                            return distance <= 50000 // Expanded to 50km
                         }
-                        .prefix(5) // Increased to top 5 per category
+                        .prefix(6) // More results per category
                     
+                    print("📍 After filtering: \(filteredPlaces.count) places for '\(searchType)'")
                     allPlaces.append(contentsOf: filteredPlaces)
+                } else if let error = error {
+                    print("❌ Search error for \(searchType): \(error.localizedDescription)")
                 }
             }
         }
         
         dispatchGroup.notify(queue: .main) {
-            // Remove duplicates and limit total results
+            print("🏁 Total places found before deduplication: \(allPlaces.count)")
+            
+            // Remove duplicates and shuffle for variety
             let uniquePlaces = Array(Set(allPlaces.map { $0.name ?? "" }))
                 .compactMap { name in allPlaces.first { $0.name == name } }
-                .prefix(24) // Increased from 12 to 24 places
+                .shuffled() // Add randomness
+                .prefix(30) // Show up to 30 places (increased from 20)
             
             self.nearbyPlaces = Array(uniquePlaces)
             self.isLoading = false
+            
+            print("✅ Final places shown: \(self.nearbyPlaces.count)")
+            
+            // Log the types of places we found
+            for place in self.nearbyPlaces {
+                let category = place.pointOfInterestCategory?.rawValue ?? "No category"
+                print("📋 \(place.name ?? "Unknown"): \(category)")
+            }
         }
     }
     

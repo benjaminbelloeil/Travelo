@@ -57,7 +57,9 @@ struct PopularPlacesMapView: View {
             .padding(.horizontal, 20)
             
             // Map with real places
-            Map(coordinateRegion: $placesService.region, annotationItems: placesService.nearbyPlaces) { place in
+            Map(coordinateRegion: $placesService.region, 
+                interactionModes: [.zoom, .pan], 
+                annotationItems: placesService.nearbyPlaces) { place in
                 MapAnnotation(coordinate: place.placemark.coordinate) {
                     RealPlaceMarker(place: place) {
                         selectedPlace = place
@@ -103,14 +105,30 @@ struct PopularPlacesMapView: View {
             }
         }
         .onAppear {
-            initializeLocation()
+            // Auto-start loading when view appears
+            if placesService.nearbyPlaces.isEmpty && !placesService.isLoading {
+                initializeLocation()
+            }
         }
         .onChange(of: countryManager.selectedCountry?.code) { _ in
+            // Reload when country changes
             initializeLocation()
+        }
+        .onReceive(countryManager.locationService.$currentLocation) { location in
+            // Reload when user's location updates
+            if let location = location, placesService.nearbyPlaces.isEmpty {
+                placesService.updateRegion(for: location.coordinate)
+                placesService.searchNearbyPlaces(around: location.coordinate)
+            }
         }
     }
     
     private func initializeLocation() {
+        // Always start with loading state for better UX
+        if !placesService.isLoading {
+            placesService.isLoading = true
+        }
+        
         // First try to get user's actual location
         if countryManager.locationService.isLocationAvailable,
            let userLocation = countryManager.locationService.currentLocation {
@@ -122,7 +140,7 @@ struct PopularPlacesMapView: View {
             placesService.updateRegion(for: coordinate)
             placesService.searchNearbyPlaces(around: coordinate)
             
-            // Also try to request location permission
+            // Also try to request location permission for next time
             placesService.requestLocationPermission()
         }
     }
@@ -168,6 +186,159 @@ struct RealPlaceMarker: View {
     let place: MKMapItem
     let onTap: () -> Void
     
+    private var categoryIcon: String {
+        guard let category = place.pointOfInterestCategory else { 
+            print("❌ No category for place: \(place.name ?? "Unknown")")
+            return "location.fill" 
+        }
+        
+        let categoryString = category.rawValue
+        print("🏷️ Place: \(place.name ?? "Unknown") - Category: \(categoryString)")
+        
+        // Use only basic SF Symbols that definitely exist
+        let icon: String
+        switch categoryString {
+        // Food & Dining - using basic symbols
+        case "MKPOICategoryRestaurant":
+            icon = "fork.knife"
+            print("🍽️ Restaurant icon: fork.knife")
+        case "MKPOICategoryCafe":
+            icon = "cup.and.saucer.fill"
+            print("☕ Cafe icon: cup.and.saucer.fill")
+        case "MKPOICategoryBakery":
+            icon = "birthday.cake.fill"
+            print("🎂 Bakery icon: birthday.cake.fill")
+            
+        // Shopping & Services - using very basic symbols
+        case "MKPOICategoryStore":
+            icon = "bag.fill"
+            print("🛍️ Store icon: bag.fill")
+        case "MKPOICategoryDepartmentStore":
+            icon = "building.2.fill"
+            print("🏪 Department Store icon: building.2.fill")
+        case "MKPOICategoryGasStation":
+            icon = "fuelpump.fill"
+            print("⛽ Gas Station icon: fuelpump.fill")
+        case "MKPOICategoryBank":
+            icon = "dollarsign.circle.fill"
+            print("🏦 Bank icon: dollarsign.circle.fill")
+        case "MKPOICategoryATM":
+            icon = "creditcard.fill"
+            print("💳 ATM icon: creditcard.fill")
+        case "MKPOICategoryPharmacy":
+            icon = "cross.case.fill"
+            print("💊 Pharmacy icon: cross.case.fill")
+            
+        // Culture & Education
+        case "MKPOICategoryMuseum":
+            icon = "building.columns.fill"
+            print("🏛️ Museum icon: building.columns.fill")
+        case "MKPOICategoryLibrary":
+            icon = "book.fill"
+            print("📚 Library icon: book.fill")
+        case "MKPOICategorySchool", "MKPOICategoryUniversity":
+            icon = "graduationcap.fill"
+            print("🎓 School icon: graduationcap.fill")
+            
+        // Recreation & Nature
+        case "MKPOICategoryPark":
+            icon = "tree.fill"
+            print("🌳 Park icon: tree.fill")
+        case "MKPOICategoryAmusementPark":
+            icon = "gamecontroller.fill"
+            print("🎮 Amusement Park icon: gamecontroller.fill")
+        case "MKPOICategoryZoo":
+            icon = "pawprint.fill"
+            print("🐾 Zoo icon: pawprint.fill")
+        case "MKPOICategoryBeach":
+            icon = "sun.max.fill"
+            print("🏖️ Beach icon: sun.max.fill")
+            
+        // Hospitality
+        case "MKPOICategoryHotel", "MKPOICategoryLodging":
+            icon = "bed.double.fill"
+            print("🏨 Hotel icon: bed.double.fill")
+            
+        // Medical & Health
+        case "MKPOICategoryHospital":
+            icon = "cross.fill"
+            print("🏥 Hospital icon: cross.fill")
+        case "MKPOICategoryFitnessCenter":
+            icon = "figure.run"
+            print("💪 Fitness icon: figure.run")
+            
+        // Transportation
+        case "MKPOICategoryAirport":
+            icon = "airplane"
+            print("✈️ Airport icon: airplane")
+        case "MKPOICategoryCarRental":
+            icon = "car.fill"
+            print("🚗 Car Rental icon: car.fill")
+        case "MKPOICategoryEVCharger":
+            icon = "bolt.fill"
+            print("⚡ EV Charger icon: bolt.fill")
+            
+        // Entertainment
+        case "MKPOICategoryTheater":
+            icon = "theatermasks.fill"
+            print("🎭 Theater icon: theatermasks.fill")
+        case "MKPOICategoryMovieTheater":
+            icon = "tv.fill"
+            print("📺 Movie Theater icon: tv.fill")
+        case "MKPOICategoryNightlife":
+            icon = "music.note"
+            print("🎵 Nightlife icon: music.note")
+            
+        // Religious & Community
+        case "MKPOICategoryPlaceOfWorship":
+            icon = "building.fill"
+            print("⛪ Worship icon: building.fill")
+        case "MKPOICategoryPublicTransport":
+            icon = "bus.fill"
+            print("🚌 Transit icon: bus.fill")
+            
+        // Default case with detailed logging
+        default:
+            print("❓ Unknown category: \(categoryString)")
+            // Try to match common words in the category name
+            let lowerCategory = categoryString.lowercased()
+            if lowerCategory.contains("restaurant") || lowerCategory.contains("food") {
+                icon = "fork.knife"
+                print("🍽️ Fallback restaurant icon")
+            } else if lowerCategory.contains("store") || lowerCategory.contains("shop") {
+                icon = "bag.fill"
+                print("🛍️ Fallback store icon")
+            } else if lowerCategory.contains("gas") || lowerCategory.contains("fuel") {
+                icon = "fuelpump.fill"
+                print("⛽ Fallback gas icon")
+            } else if lowerCategory.contains("hotel") {
+                icon = "bed.double.fill"
+                print("🏨 Fallback hotel icon")
+            } else if lowerCategory.contains("park") {
+                icon = "tree.fill"
+                print("🌳 Fallback park icon")
+            } else if lowerCategory.contains("hospital") || lowerCategory.contains("medical") {
+                icon = "cross.fill"
+                print("🏥 Fallback medical icon")
+            } else if lowerCategory.contains("bank") {
+                icon = "dollarsign.circle.fill"
+                print("🏦 Fallback bank icon")
+            } else if lowerCategory.contains("museum") {
+                icon = "building.columns.fill"
+                print("🏛️ Fallback museum icon")
+            } else if lowerCategory.contains("airport") {
+                icon = "airplane"
+                print("✈️ Fallback airport icon")
+            } else {
+                icon = "location.fill"
+                print("📍 Using default location icon for: \(categoryString)")
+            }
+        }
+        
+        print("✅ Final icon for \(place.name ?? "Unknown"): \(icon)")
+        return icon
+    }
+    
     var body: some View {
         Button(action: onTap) {
             ZStack {
@@ -176,7 +347,7 @@ struct RealPlaceMarker: View {
                     .frame(width: 32, height: 32)
                     .shadow(color: .black.opacity(0.3), radius: 4, x: 0, y: 2)
                 
-                Image(systemName: "mappin")
+                Image(systemName: categoryIcon)
                     .font(.system(size: 14, weight: .bold))
                     .foregroundColor(.white)
             }
@@ -353,18 +524,7 @@ struct RealPlaceDetailSheet: View {
                         }
                         
                         Button(action: {
-                            // Share functionality
-                            if let name = place.name {
-                                let activityVC = UIActivityViewController(
-                                    activityItems: ["\(name) - Found via Travelo"],
-                                    applicationActivities: nil
-                                )
-                                
-                                if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
-                                   let rootViewController = windowScene.windows.first?.rootViewController {
-                                    rootViewController.present(activityVC, animated: true)
-                                }
-                            }
+                            sharePlace(place)
                         }) {
                             HStack {
                                 Image(systemName: "square.and.arrow.up")
@@ -452,6 +612,65 @@ struct RealPlaceDetailSheet: View {
             return "tram"
         default:
             return "building.2"
+        }
+    }
+    
+    // Share place functionality
+    private func sharePlace(_ place: MKMapItem) {
+        let placeName = place.name ?? "Interesting Place"
+        let coordinate = place.placemark.coordinate
+        let address = place.placemark.formattedAddress ?? "Location"
+        
+        var shareItems: [Any] = []
+        
+        // Add place information
+        let shareText = """
+        📍 \(placeName)
+        
+        📭 \(address)
+        
+        🗺️ Coordinates: \(coordinate.latitude), \(coordinate.longitude)
+        
+        Found via Travelo
+        """
+        
+        shareItems.append(shareText)
+        
+        // Add Apple Maps URL if possible
+        if let url = place.url {
+            shareItems.append(url)
+        } else {
+            // Create Apple Maps URL
+            let mapsURL = "https://maps.apple.com/?q=\(coordinate.latitude),\(coordinate.longitude)"
+            if let url = URL(string: mapsURL) {
+                shareItems.append(url)
+            }
+        }
+        
+        // Present share sheet
+        let activityController = UIActivityViewController(
+            activityItems: shareItems,
+            applicationActivities: nil
+        )
+        
+        // Configure for iPad
+        if let popover = activityController.popoverPresentationController {
+            popover.sourceView = UIApplication.shared.windows.first?.rootViewController?.view
+            popover.sourceRect = CGRect(x: UIScreen.main.bounds.midX, y: UIScreen.main.bounds.midY, width: 0, height: 0)
+            popover.permittedArrowDirections = []
+        }
+        
+        // Present the share sheet
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootViewController = windowScene.windows.first?.rootViewController {
+            
+            // Find the topmost view controller
+            var topController = rootViewController
+            while let presented = topController.presentedViewController {
+                topController = presented
+            }
+            
+            topController.present(activityController, animated: true)
         }
     }
 }
