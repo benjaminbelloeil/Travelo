@@ -261,6 +261,10 @@ struct HomeView: View {
                         .animation(.easeInOut(duration: 0.4), value: visibleSteps.map { $0.id })
                     }
                     
+                    // Popular Places Map Section (moved closer to steps)  
+                    PopularPlacesMapView()
+                        .padding(.top, 24)
+                    
                     Spacer(minLength: 100) // Space for bottom navigation
                 }
             }

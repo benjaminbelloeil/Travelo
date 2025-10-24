@@ -13,6 +13,7 @@ class LocationService: NSObject, ObservableObject {
     @Published var authorizationStatus: CLAuthorizationStatus = .notDetermined
     @Published var currentLocationTag: String?
     @Published var isLocationAvailable: Bool = false
+    @Published var currentLocation: CLLocation?
     
     private let locationManager = CLLocationManager()
     private let geocoder = CLGeocoder()
@@ -96,6 +97,7 @@ extension LocationService: CLLocationManagerDelegate {
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         guard let location = locations.last else { return }
+        currentLocation = location
         reverseGeocode(location: location)
     }
     
