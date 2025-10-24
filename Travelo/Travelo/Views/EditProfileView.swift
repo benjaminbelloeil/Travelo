@@ -34,7 +34,8 @@ struct EditProfileView: View {
                         ProfileImageView(
                             imageData: editedProfile.profileImageData,
                             initials: editedProfile.initials,
-                            size: 100
+                            size: 100,
+                            showCameraOverlay: true
                         )
                         .onTapGesture {
                             showingImagePicker = true
@@ -79,7 +80,7 @@ struct EditProfileView: View {
                         }
                     }
                     .sheet(isPresented: $showDatePicker) {
-                        DatePickerSheet(selectedDate: Binding(
+                        ImprovedDatePickerSheet(selectedDate: Binding(
                             get: { editedProfile.dateOfBirth ?? Calendar.current.date(byAdding: .year, value: -25, to: Date()) ?? Date() },
                             set: { editedProfile.dateOfBirth = $0 }
                         ))
@@ -195,24 +196,23 @@ struct EditProfileView: View {
     }
 }
 
-// MARK: - Date Picker Sheet
-struct DatePickerSheet: View {
+// MARK: - Improved Date Picker Sheet
+struct ImprovedDatePickerSheet: View {
     @Binding var selectedDate: Date
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         NavigationView {
-            VStack {
+            VStack(spacing: 0) {
                 DatePicker(
-                    "Select Date",
+                    "",
                     selection: $selectedDate,
                     in: ...Date(),
                     displayedComponents: .date
                 )
                 .datePickerStyle(.wheel)
+                .labelsHidden()
                 .padding()
-                
-                Spacer()
             }
             .navigationTitle("Date of Birth")
             .navigationBarTitleDisplayMode(.inline)
@@ -231,6 +231,8 @@ struct DatePickerSheet: View {
                 }
             }
         }
+        .presentationDetents([.medium])
+        .presentationDragIndicator(.visible)
     }
 }
 

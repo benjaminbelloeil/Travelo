@@ -63,16 +63,6 @@ struct ContentView: View {
             } else {
                 TabView(selection: $selectedTab) {
                     HomeView()
-                        .onCountryTap {
-                            // Callback when user taps on country name to change country
-                            withAnimation(.spring(response: 0.5, dampingFraction: 0.9, blendDuration: 0.2)) {
-                                showCountrySelectionFromHome = true
-                            }
-                        }
-                        .onProfileTap {
-                            // Callback when user taps on profile avatar to go to profile tab
-                            selectedTab = .profile
-                        }
                     .tabItem {
                         Image(systemName: Tab.home.icon)
                         Text(Tab.home.rawValue)
@@ -111,6 +101,12 @@ struct ContentView: View {
                 .environmentObject(countryManager)
                 .environmentObject(stepStateManager)
                 .environmentObject(profileManager)
+                .environment(\.tabSelection, $selectedTab)
+                .environment(\.showCountrySelection, {
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.9, blendDuration: 0.2)) {
+                        showCountrySelectionFromHome = true
+                    }
+                })
                 .transition(.asymmetric(
                     insertion: .opacity, // Simple fade in for main app
                     removal: .opacity

@@ -12,15 +12,11 @@ struct HomeView: View {
     @EnvironmentObject var countryManager: CountryManager
     @EnvironmentObject var stepStateManager: StepStateManager
     @EnvironmentObject var profileManager: UserProfileManager
+    @Environment(\.tabSelection) var tabSelection
+    @Environment(\.showCountrySelection) var showCountrySelection
     
     // State for navigation through step groups
     @State private var currentStepGroup: Int = 0
-    
-    // Callback to notify when user taps on country name to change country
-    var onCountryTap: (() -> Void)? = nil
-    
-    // Callback to notify when user taps on profile avatar
-    var onProfileTap: (() -> Void)? = nil
     
     // Dynamic greeting based on time
     private var timeBasedGreeting: String {
@@ -88,7 +84,7 @@ struct HomeView: View {
                         
                         // Profile avatar (synced with ProfileView)
                         Button(action: {
-                            onProfileTap?()
+                            tabSelection.wrappedValue = .profile
                         }) {
                             ProfileImageView(
                                 imageData: profileManager.userProfile.profileImageData,
@@ -180,7 +176,7 @@ struct HomeView: View {
                                     .cornerRadius(10)
                                     .shadow(color: .black.opacity(0.15), radius: 4, x: 0, y: 2)
                                     .onTapGesture {
-                                        onCountryTap?()
+                                        showCountrySelection()
                                     }
                                 }
                                 .padding(.trailing, 16)
@@ -323,24 +319,11 @@ struct HomeView: View {
     }
 }
 
-// MARK: - HomeView Extensions for Callbacks
-extension HomeView {
-    func onCountryTap(_ action: @escaping () -> Void) -> HomeView {
-        var view = self
-        view.onCountryTap = action
-        return view
-    }
-    
-    func onProfileTap(_ action: @escaping () -> Void) -> HomeView {
-        var view = self
-        view.onProfileTap = action
-        return view
-    }
-}
-
 #Preview {
     HomeView()
         .environmentObject(CountryManager())
         .environmentObject(StepStateManager())
         .environmentObject(UserProfileManager())
+        .environment(\.tabSelection, .constant(.home))
+        .environment(\.showCountrySelection, {})
 }
