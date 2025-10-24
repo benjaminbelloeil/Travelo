@@ -17,6 +17,9 @@ struct ContentView: View {
     @StateObject private var stepStateManager = StepStateManager()
     @StateObject private var profileManager = UserProfileManager()
     
+    // Add a state to force UI refresh when needed
+    @State private var refreshTrigger = false
+    
     // Computed property to determine if we should show onboarding
     private var shouldShowOnboarding: Bool {
         !countryManager.hasCompletedOnboarding
@@ -24,44 +27,8 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            if showCountrySelectionFromHome {
-                // Country selection from HomeView (going back to change country)
-                CountrySelectionView {
-                    // When location is chosen, return to home
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.9, blendDuration: 0.2)) {
-                        showCountrySelectionFromHome = false
-                    }
-                }
-                .environmentObject(countryManager)
-                .transition(.asymmetric(
-                    insertion: .move(edge: .leading).combined(with: .opacity),  // Slides in from left (backward navigation)
-                    removal: .move(edge: .leading).combined(with: .opacity)     // Slides out to left (forward navigation)
-                ))
-                .zIndex(2)
-            } else if shouldShowOnboarding && !showCountrySelection {
-                // Start screen shown for new users
-                StartView {
-                    // Show country selection when START is tapped
-                    withAnimation(.spring(response: 0.6, dampingFraction: 0.85, blendDuration: 0.1)) {
-                        showCountrySelection = true
-                    }
-                }
-                .transition(.asymmetric(
-                    insertion: .opacity,
-                    removal: .move(edge: .leading).combined(with: .opacity)
-                ))
-            } else if showCountrySelection && shouldShowOnboarding {
-                // Country selection view for new users
-                CountrySelectionView {
-                    // When location is chosen, go to main app
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.9, blendDuration: 0.2)) {
-                        selectedTab = .home
-                        showCountrySelection = false
-                    }
-                }
-                .environmentObject(countryManager)
-                .transition(.opacity) // Simple fade out, no sliding
-            } else {
+            // Show TabView only when not in onboarding or country selection
+            if !shouldShowOnboarding && !showCountrySelection && !showCountrySelectionFromHome {
                 TabView(selection: $selectedTab) {
                     HomeView()
                     .tabItem {
@@ -108,14 +75,80 @@ struct ContentView: View {
                         showCountrySelectionFromHome = true
                     }
                 })
-                .transition(.asymmetric(
-                    insertion: .opacity, // Simple fade in for main app
-                    removal: .opacity
-                ))
-                .animation(.easeInOut(duration: 0.45), value: shouldShowOnboarding)
                 .onChange(of: countryManager.selectedCountry?.code) { newCode in
                     if let code = newCode {
                         stepStateManager.updateCountry(code, templateVersion: 1)
+                        // Trigger refresh to ensure UI updates
+                        refreshTrigger.toggle()
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(1)
+                .id(refreshTrigger) // Force recreation when refresh is triggered
+            }
+            
+            // Onboarding flow overlays
+            if showCountrySelectionFromHome {
+                // Country selection from HomeView (going back to change country)
+                CountrySelectionView {
+                    // When location is chosen, return to home
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.9, blendDuration: 0.2)) {
+                        showCountrySelectionFromHome = false
+                        // Force update the step state manager and trigger UI refresh
+                        if let selectedCountry = countryManager.selectedCountry {
+                            stepStateManager.updateCountry(selectedCountry.code, templateVersion: 1)
+                        }
+                        refreshTrigger.toggle()
+                    }
+                }
+                .environmentObject(countryManager)
+                .transition(.asymmetric(
+                    insertion: .move(edge: .leading).combined(with: .opacity),
+                    removal: .move(edge: .leading).combined(with: .opacity)
+                ))
+                .zIndex(3)
+            }
+            
+            if shouldShowOnboarding && !showCountrySelection {
+                // Start screen shown for new users
+                StartView {
+                    // Show country selection when START is tapped
+                    withAnimation(.spring(response: 0.6, dampingFraction: 0.85, blendDuration: 0.1)) {
+                        showCountrySelection = true
+                    }
+                }
+                .transition(.asymmetric(
+                    insertion: .opacity,
+                    removal: .move(edge: .leading).combined(with: .opacity)
+                ))
+                .zIndex(2)
+            }
+            
+            if showCountrySelection && shouldShowOnboarding {
+                // Country selection view for new users
+                CountrySelectionView {
+                    // When location is chosen, go to main app
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.9, blendDuration: 0.2)) {
+                        selectedTab = .home
+                        showCountrySelection = false
+                    }
+                }
+                .environmentObject(countryManager)
+                .transition(.opacity)
+                .zIndex(2)
+            }
+        }
+        .animation(.easeInOut(duration: 0.3), value: shouldShowOnboarding)
+        .animation(.easeInOut(duration: 0.3), value: showCountrySelection)
+        .animation(.easeInOut(duration: 0.3), value: showCountrySelectionFromHome)
+        .onChange(of: showCountrySelectionFromHome) { newValue in
+            // When returning from country selection, ensure we're in the right state
+            if !newValue && !shouldShowOnboarding && !showCountrySelection {
+                // Force a UI update by slightly delaying to ensure all states are synchronized
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    // This triggers a UI refresh to ensure TabView appears
+                    if let selectedCountry = countryManager.selectedCountry {
+                        stepStateManager.updateCountry(selectedCountry.code, templateVersion: 1)
                     }
                 }
             }

@@ -147,23 +147,22 @@ struct StressReliefView: View {
     var body: some View {
         ZStack {
             NavigationView {
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // Header section - matching Home/Guide style
-                        HStack {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("Find Your Calm")
-                                    .font(.system(size: 28, weight: .heavy))
-                                    .foregroundColor(.black)
-                                
-                                Text("Meditate and learn Italian phrases")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.gray)
-                            }
-                            Spacer()
+                VStack(spacing: 24) {
+                    // Header section - matching Home/Guide style
+                    HStack {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Find Your Calm")
+                                .font(.system(size: 28, weight: .heavy))
+                                .foregroundColor(.black)
+                            
+                            Text("Meditate and learn Italian phrases")
+                                .font(.system(size: 16))
+                                .foregroundColor(.gray)
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 20)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
 
                         // Main meditation section
                         VStack(spacing: 40) {
@@ -312,9 +311,8 @@ struct StressReliefView: View {
                             )
                         }
                         .padding(.horizontal, 20)
-                        
-                        Spacer(minLength: 100) // Space for bottom navigation
-                    }
+                    
+                    Spacer() // Add spacer to fill remaining space since we removed ScrollView
                 }
                 .navigationBarHidden(true)
                 .background(Color.white)
@@ -439,7 +437,6 @@ struct StressReliefView: View {
                 UserDefaults.standard.set(true, forKey: "tutorialShown")
             }
         }
-
     }
     
     private var modernPopupView: some View {

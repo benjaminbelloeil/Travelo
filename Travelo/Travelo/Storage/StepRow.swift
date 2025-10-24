@@ -33,16 +33,16 @@ struct StepRow: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 8) {
-                // Step Number
+                // Step Number (back to left, smaller)
                 VStack {
                     Text("\(item.stepNumber)")
-                        .font(.system(size: 24))
+                        .font(.system(size: 20, weight: .medium))
                         .foregroundColor(Color.black)
                         .multilineTextAlignment(.center)
                 }
-                .frame(width: 44)
+                .frame(width: 32) // Reduced from original 44 to 32
                 
-                // Timeline indicator
+                // Timeline indicator (back to left, closer to number)
                 ZStack(alignment: .top) {
                     // Vertical line that extends through the entire height
                     if !isLastItem {
@@ -104,7 +104,7 @@ struct StepRow: View {
                 }
                 .frame(width: 28)
                 
-                // Content
+                // Content (more space for titles, aligned with step numbers)
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
                         if showStepNumber {
@@ -115,10 +115,19 @@ struct StepRow: View {
                         Spacer()
                     }
                     
-                    Text(item.title)
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.black)
-                        .multilineTextAlignment(.leading)
+                    HStack(alignment: .firstTextBaseline, spacing: 4) { // Changed to firstTextBaseline alignment with smaller spacing
+                        Text(item.title)
+                            .font(.system(size: 16, weight: .bold)) // Reduced from 18 to 16
+                            .foregroundColor(.black)
+                            .multilineTextAlignment(.leading)
+                        
+                        // Info icon to indicate clickable for more details - positioned right after title
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 14, weight: .medium)) // Made proportionally smaller
+                            .foregroundColor(Color("Primary").opacity(0.7))
+                        
+                        Spacer()
+                    }
                     
                     Text(item.subtitle)
                         .font(.system(size: 14))
@@ -130,12 +139,12 @@ struct StepRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.trailing, 4)
                 
-                // Interactive status button
+                // Interactive status button (back to right side)
                 Button(action: handleToggle) {
                     Image(systemName: isDone ? "checkmark" : "xmark")
-                        .font(.system(size: 20, weight: .thin))
+                        .font(.system(size: 18, weight: .thin))
                         .foregroundColor(isDone ? .green : (canToggle ? .gray : .gray.opacity(0.4)))
-                        .frame(width: 40, height: 40)
+                        .frame(width: 36, height: 36)
                         .background(
                             Circle()
                                 .fill(isDone ? Color.green.opacity(0.1) : Color.gray.opacity(0.1))

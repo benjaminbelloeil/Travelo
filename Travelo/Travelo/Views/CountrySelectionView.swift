@@ -15,6 +15,14 @@ struct CountrySelectionView: View {
     
     @State private var selectedIndex: Int = 0
     
+    // Initialize with the current selected country
+    private func initializeSelectedIndex() {
+        if let currentCountry = countryManager.selectedCountry,
+           let index = CountryManager.availableCountries.firstIndex(where: { $0.code == currentCountry.code }) {
+            selectedIndex = index
+        }
+    }
+    
     var body: some View {
         GeometryReader { proxy in
             let selected = CountryManager.availableCountries[selectedIndex]
@@ -121,6 +129,10 @@ struct CountrySelectionView: View {
                         }
                     }
             )
+            .onAppear {
+                // Initialize with current country when view appears
+                initializeSelectedIndex()
+            }
         }
     }
 }

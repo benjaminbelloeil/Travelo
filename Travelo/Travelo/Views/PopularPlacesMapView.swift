@@ -23,11 +23,11 @@ struct PopularPlacesMapView: View {
     @State private var showingPlaceDetail = false
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // Section header
+        VStack(alignment: .leading, spacing: 20) {
+            // Section header - matching "Your next steps" styling
             HStack {
                 Text("Popular Places Nearby")
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.system(size: 24, weight: .bold))
                     .foregroundColor(.black)
                 
                 Spacer()
