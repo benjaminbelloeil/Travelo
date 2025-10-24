@@ -201,6 +201,7 @@ struct StressReliefView: View {
                                     Text(song.title)
                                         .font(.system(size: 20, weight: .semibold))
                                         .foregroundColor(.black)
+                                        .animation(.easeInOut(duration: 0.3), value: song.title)
                                 }
                             }
                             .frame(minHeight: 50) // Reserve space to prevent layout shifts
@@ -215,17 +216,29 @@ struct StressReliefView: View {
                                 }
                                 
                                 VStack(spacing: 24) {
-                                    // Mood labels - properly aligned
+                                    // Mood labels - properly aligned with slider positions
                                     HStack {
-                                        ForEach(moods, id: \.id) { mood in
-                                            Text(mood.name)
-                                                .font(.system(size: 16, weight: .medium))
-                                                .foregroundColor(selectedMood == mood ? mood.color : .gray)
-                                                .frame(maxWidth: .infinity)
-                                                .animation(.easeInOut(duration: 0.3), value: selectedMood)
-                                        }
+                                        Text("Happy")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(selectedMood?.key == "Happy" ? moods[0].color : .gray)
+                                            .frame(width: 60, alignment: .leading) // Fixed width, left aligned
+                                        
+                                        Spacer()
+                                        
+                                        Text("Sad")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(selectedMood?.key == "Sad" ? moods[1].color : .gray)
+                                            .frame(alignment: .center)
+                                        
+                                        Spacer()
+                                        
+                                        Text("Energetic")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(selectedMood?.key == "Energetic" ? moods[2].color : .gray)
+                                            .frame(width: 80, alignment: .trailing) // Fixed width, right aligned
                                     }
-                                    .padding(.horizontal, 8)
+                                    .padding(.horizontal, 12) // Match slider padding
+                                    .animation(.easeInOut(duration: 0.3), value: selectedMood)
                                     
                                     // Improved slider - properly aligned
                                     GeometryReader { geo in
@@ -237,18 +250,17 @@ struct StressReliefView: View {
                                             
                                             // Active track (up to current mood) - transparent
                                             Capsule()
-                                                .fill((selectedMood?.color ?? Color.gray).opacity(0.3))
+                                                .fill((selectedMood?.color ?? moods[0].color).opacity(0.3))
                                                 .frame(width: knobXPosition(geo: geo), height: 4)
                                                 .animation(.spring(response: 0.4, dampingFraction: 0.8), value: selectedMood)
                                             
                                             // Knob - more prominent
                                             Circle()
-                                                .fill(selectedMood?.color ?? Color.gray)
+                                                .fill(selectedMood?.color ?? moods[0].color)
                                                 .frame(width: 24, height: 24)
                                                 .offset(x: knobXPosition(geo: geo) - 12, y: 0)
-                                                .shadow(color: (selectedMood?.color ?? Color.gray).opacity(0.3), radius: 4)
+                                                .shadow(color: (selectedMood?.color ?? moods[0].color).opacity(0.3), radius: 4)
                                                 .animation(.spring(response: 0.4, dampingFraction: 0.8), value: selectedMood)
-                                                .scaleEffect(selectedMood != nil ? 1.0 : 0.8)
                                                 .gesture(
                                                     DragGesture(minimumDistance: 0)
                                                         .onChanged { value in
@@ -264,12 +276,16 @@ struct StressReliefView: View {
                                                                         currentColor = newMood.color
                                                                     }
 
-                                                                    // Stop currently playing audio (if any)
+                                                                    // If playing, smoothly transition to new song
                                                                     if isPlaying {
-                                                                        audioPlayer?.stop()
-                                                                        isPlaying = false
-                                                                        currentSong = nil
-                                                                        phraseTimer?.cancel()
+                                                                        if let songs = moodSongs[newMood.key],
+                                                                           let randomSong = songs.randomElement() {
+                                                                            currentSong = randomSong
+                                                                            playSound(named: randomSong.fileName)
+                                                                            // Cancel existing phrase timer and start new one
+                                                                            phraseTimer?.cancel()
+                                                                            startPhraseTimer()
+                                                                        }
                                                                     }
 
                                                                     // Haptic feedback
@@ -281,7 +297,7 @@ struct StressReliefView: View {
                                         }
                                     }
                                     .frame(height: 40)
-                                    .padding(.horizontal, 8)
+                                    .padding(.horizontal, 12)
                                 }
                             }
                             .padding(20)
@@ -299,6 +315,23 @@ struct StressReliefView: View {
                 .navigationBarHidden(true)
                 .background(Color.white)
             }
+            .onAppear {
+                // Set default mood to Happy
+                if selectedMood == nil {
+                    selectedMood = moods[0] // Happy
+                    currentColor = moods[0].color
+                }
+            }
+            .onDisappear {
+                // Stop music when leaving the tab
+                if isPlaying {
+                    audioPlayer?.stop()
+                    audioPlayer = nil
+                    isPlaying = false
+                    currentSong = nil
+                    phraseTimer?.cancel()
+                }
+            }
             
             // Fixed popup with darker background
             if showPhrasePopup {
@@ -307,16 +340,16 @@ struct StressReliefView: View {
                     .transition(.opacity)
                     .zIndex(1)
 
-                popupView // our reusable popup
+                modernPopupView // Updated popup design
                     .transition(.scale.combined(with: .opacity))
                     .zIndex(2)
             }
             
-            // MARK: - Tutorial Overlay with darker background and updated steps
+            // MARK: - Tutorial Overlay with Apple-like gray background
             if isTutorial {
                 ZStack {
-                    // Much darker background
-                    Color.black.opacity(0.8)
+                    // Apple-like gray background
+                    Color.gray.opacity(0.9)
                         .ignoresSafeArea()
                         .transition(.opacity)
                         .zIndex(2)
@@ -324,17 +357,14 @@ struct StressReliefView: View {
                     VStack(spacing: 24) {
                         Spacer()
 
-                        // Tutorial content card
-                        VStack(spacing: 16) {
-                            
-                            Spacer()
+                        // Tutorial content card - Apple style
+                        VStack(spacing: 20) {
                             
                             if tutorialStep == 0 {
                                 Text("Calm Guide")
-                                    .font(.largeTitle.weight(.semibold))
-                                    .foregroundColor(.white)
-                                    .padding(.top, 10)
-                                    .animation(.easeInOut(duration: 0.2), value: tutorialStep)
+                                    .font(.system(size: 32, weight: .bold))
+                                    .foregroundColor(.black)
+                                    .padding(.top, 20)
                             }
 
                             // Updated tutorial steps
@@ -347,13 +377,11 @@ struct StressReliefView: View {
                             ]
                             
                             Text(updatedSteps[tutorialStep])
-                                .font(.title3)
-                                .foregroundColor(.white.opacity(0.9))
-                                .fontWeight(.medium)
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.black.opacity(0.8))
                                 .multilineTextAlignment(.center)
-                                .padding(.horizontal, 30)
-                                .frame(maxWidth: .infinity)
-                                .fixedSize(horizontal: false, vertical: true)
+                                .padding(.horizontal, 40)
+                                .lineLimit(nil)
                             
                             Spacer()
                             
@@ -368,32 +396,21 @@ struct StressReliefView: View {
                                     }
                                 }
                             } label: {
-                                Text(tutorialStep == updatedSteps.count - 1 ? "Got it!" : "Next")
-                                    .font(.headline)
-                                    .foregroundColor(.black)
-                                    .padding(.horizontal, 40)
-                                    .padding(.vertical, 12)
-                                    .background(Color.white)
-                                    .cornerRadius(12)
-                                    .shadow(radius: 2)
+                                Text(tutorialStep == updatedSteps.count - 1 ? "Get Started" : "Continue")
+                                    .font(.system(size: 18, weight: .semibold))
+                                    .foregroundColor(.white)
+                                    .padding(.horizontal, 50)
+                                    .padding(.vertical, 16)
+                                    .background(Color.blue)
+                                    .cornerRadius(25)
                             }
-                            
+                            .padding(.bottom, 20)
                         }
-                        .padding(.vertical, 30)
-                        .frame(maxWidth: 320, maxHeight: 400)
+                        .frame(maxWidth: 350, maxHeight: 450)
                         .background(
-                            RoundedRectangle(cornerRadius: 25)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [
-                                            currentColor.opacity(0.9),
-                                            currentColor.opacity(0.7)
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .shadow(color: currentColor.opacity(0.4), radius: 10, x: 0, y: 5)
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(Color.white)
+                                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
                         )
                         .padding()
 
@@ -412,6 +429,116 @@ struct StressReliefView: View {
             }
         }
 
+    }
+    
+    private var modernPopupView: some View {
+        VStack(spacing: 24) {
+            if let phrase = currentPhrase {
+                VStack(spacing: 20) {
+                    // Italian phrase
+                    Text(phrase.phrase)
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundColor(.black)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                    
+                    // Translation
+                    Text(phrase.translation)
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+
+                    // Action buttons in oval cards
+                    HStack(spacing: 16) {
+                        // Listen button
+                        Button {
+                            speakPhrase(phrase.phrase)
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "speaker.wave.2.fill")
+                                    .font(.system(size: 16))
+                                Text("Listen")
+                                    .font(.system(size: 16, weight: .medium))
+                            }
+                            .foregroundColor(.blue)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(20)
+                        }
+
+                        // Speak button
+                        Button {
+                            requestSpeechPermissions { granted in
+                                guard granted else { return }
+                                if isRecording { stopRecording() }
+                                else if let phrase = currentPhrase?.phrase { startRecording(for: phrase) }
+                            }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: isRecording ? "mic.fill" : "mic")
+                                    .font(.system(size: 16))
+                                Text(isRecording ? "Listening..." : "Speak")
+                                    .font(.system(size: 16, weight: .medium))
+                            }
+                            .foregroundColor(isRecording ? .red : .green)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 12)
+                            .background((isRecording ? Color.red : Color.green).opacity(0.1))
+                            .cornerRadius(20)
+                        }
+                    }
+
+                    // Feedback result
+                    if let result = recognitionResult {
+                        HStack(spacing: 8) {
+                            Image(systemName: result ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                .foregroundColor(result ? .green : .red)
+                            Text(result ? "Great job!" : "Try again!")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(result ? .green : .red)
+                        }
+                        .padding(.top, 8)
+                    }
+                    
+                    // Continue button
+                    Button("Continue") {
+                        withAnimation {
+                            recognitionResult = nil
+                            recognizedText = ""
+                            showPhrasePopup = false
+                            audioPlayer?.play()
+                            isPlaying = true
+                        }
+                    }
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 40)
+                    .padding(.vertical, 16)
+                    .background(Color.blue)
+                    .cornerRadius(25)
+                }
+                .padding(30)
+                .frame(maxWidth: 350)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(Color.white)
+                        .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                )
+                .padding()
+            }
+        }
+    }
+    
+    // Helper function to start phrase timer
+    private func startPhraseTimer() {
+        let randomDelay = Double.random(in: 1...5)
+        let workItem = DispatchWorkItem {
+            showRandomPhraseForCurrentMood()
+        }
+        phraseTimer = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + randomDelay, execute: workItem)
     }
     
     private var popupView: some View {

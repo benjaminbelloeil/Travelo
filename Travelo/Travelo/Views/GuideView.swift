@@ -64,3 +64,7 @@ struct GuideView: View {
         }
     }
 }
+
+#Preview {
+    GuideView()
+}
