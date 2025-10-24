@@ -10,9 +10,22 @@
 		7F8E05FB2E991E8B00C4E30D /* Travelo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Travelo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D942DD692EABC5A7004BF852 /* Exceptions for "Travelo" folder in "Travelo" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 7F8E05FA2E991E8B00C4E30D /* Travelo */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		7F8E05FD2E991E8B00C4E30D /* Travelo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D942DD692EABC5A7004BF852 /* Exceptions for "Travelo" folder in "Travelo" target */,
+			);
 			path = Travelo;
 			sourceTree = "<group>";
 		};
