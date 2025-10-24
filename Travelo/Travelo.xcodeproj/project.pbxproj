@@ -10,9 +10,22 @@
 		7F8E05FB2E991E8B00C4E30D /* Travelo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Travelo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		D942DD242EAB8544004BF852 /* Exceptions for "Travelo" folder in "Travelo" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 7F8E05FA2E991E8B00C4E30D /* Travelo */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		7F8E05FD2E991E8B00C4E30D /* Travelo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D942DD242EAB8544004BF852 /* Exceptions for "Travelo" folder in "Travelo" target */,
+			);
 			path = Travelo;
 			sourceTree = "<group>";
 		};
@@ -256,6 +269,9 @@
 				DEVELOPMENT_TEAM = DQQALW53ZU;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Travelo/Info.plist;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app uses your microphone to record your voice when practicing Italian, so you can improve your pronunciation and speaking skills.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Speech recognition is used to analyze your spoken Italian and help you improve your pronunciation and accuracy.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -288,6 +304,9 @@
 				DEVELOPMENT_TEAM = DQQALW53ZU;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Travelo/Info.plist;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "This app uses your microphone to record your voice when practicing Italian, so you can improve your pronunciation and speaking skills.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Speech recognition is used to analyze your spoken Italian and help you improve your pronunciation and accuracy.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

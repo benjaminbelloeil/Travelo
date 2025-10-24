@@ -51,7 +51,7 @@ struct StressReliefView: View {
     @State private var speechSynthesizer = AVSpeechSynthesizer() // Used to pronounce Italian phrases aloud
 
     // MARK: - UI / Miscellaneous States
-    @State private var isTutorial = true                 // Whether the tutorial or onboarding overlay is visible
+    @State private var isTutorial = false                 // Whether the tutorial or onboarding overlay is visible
     @State private var tutorialStep = 0                   //
 
     // MARK: - Speech Recognition
@@ -146,170 +146,180 @@ struct StressReliefView: View {
     // MARK: - UI
     var body: some View {
         ZStack {
-            //Color(.systemGray6).ignoresSafeArea()
-            
-            // MARK: - App Background Animation based on User's Mood Choice
-            currentColor
-                .opacity(0.2)
-                .blur(radius: 40)
-                .ignoresSafeArea()
-                .animation(.easeInOut(duration: 0.5), value: currentColor)
-            
-            Spacer()
-            VStack(spacing: 20) {
-                Text("MEDITATION")
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .padding(.top, 50)
-                    .padding(.leading, -180)
-
-                Spacer()
-//                Spacer()
-//                Spacer()
-//                Spacer()
-
-                // Main Meditation Orb
-                ZStack {
-                    Circle()
-                        .fill(
-                            RadialGradient(
-                                gradient: Gradient(colors: [currentColor.opacity(0.6), currentColor.opacity(0.25)]),
-                                center: .center,
-                                startRadius: 10,
-                                endRadius: 120
-                            )
-                        )
-                        .frame(width: 262, height: 262)
-                        .shadow(color: currentColor.opacity(0.4), radius: 20)
-                        .overlay(
-                            Button(action: playSoundForCurrentMood) {
-                                Image(systemName: isPlaying ? "pause.fill" : "play.fill")
-                                    .font(.system(size: 40))
-                                    .foregroundColor(.white)
-                                    .shadow(color: .black.opacity(0.3), radius: 5)
+            NavigationView {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // Header section - matching Home/Guide style
+                        HStack {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Find Your Calm")
+                                    .font(.system(size: 28, weight: .heavy))
+                                    .foregroundColor(.black)
+                                
+                                Text("Meditate and learn Italian phrases")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.gray)
                             }
-                        )
-                }
-                
-
-                // Song name display
-                if let song = currentSong {
-                    Text(song.title)
-                        .font(.headline)
-                        .foregroundColor(.black)
-                        .fontWeight(.semibold)
-                }
-                
-//                Spacer()
-//                Spacer()
-//                Spacer()
-                
-                // Mood Slider
-                VStack(spacing: 24) {
-                    // Label row
-                    HStack {
-                        ForEach(moods, id: \.id) { mood in
-                            Text(mood.name)
-                                .font(.headline)
-                                .foregroundColor(selectedMood == mood ? .primary : .secondary)
-                                .fontWeight(.bold)
-                                .frame(maxWidth: .infinity)
+                            Spacer()
                         }
-                    }
-                    
-                    // Slider track
-                    GeometryReader { geo in
-                        ZStack(alignment: .leading) {
-                            // Base track
-                            Capsule()
-                                .fill(Color("Primary").opacity(0.3))
-                                .frame(height: 6)
-                            
-                            // Active track (up to current mood)
-                            Capsule()
-                                .fill(selectedMood?.color ?? Color("Primary"))
-                                .frame(width: knobXPosition(geo: geo), height: 6)
-                                .animation(.easeInOut(duration: 0.3), value: selectedMood)
-                            
-                            // Knob
-                            Circle()
-                                .fill(selectedMood?.color ?? Color("Primary"))
-                                .frame(width: 20, height: 20)
-                                .offset(x: knobXPosition(geo: geo) - 14, y: 0)
-                                .shadow(radius: 2)
-                                .gesture(
-                                    DragGesture(minimumDistance: 0)
-                                        .onChanged { value in
-                                            let stepWidth = geo.size.width / CGFloat(moods.count - 1)
-                                            let index = Int(round(value.location.x / stepWidth))
+                        .padding(.horizontal, 20)
+                        .padding(.top, 20)
 
-                                            if index >= 0 && index < moods.count {
-                                                let newMood = moods[index]
-
-                                                if newMood != selectedMood {
-                                                    // Update mood & UI color
-                                                    selectedMood = newMood
-                                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                                        currentColor = newMood.color
-                                                    }
-
-                                                    // Stop currently playing audio (if any)
-                                                    if isPlaying {
-                                                        audioPlayer?.stop()
-                                                        isPlaying = false
-                                                        currentSong = nil
-                                                        phraseTimer?.cancel()
-                                                    }
-
-                                                    // Start a new song for the new mood
-                                                    // Uncomment if you want immediate playback
-                                                    /*
-                                                    if let songs = moodSongs[newMood.key],
-                                                       let randomSong = songs.randomElement() {
-                                                        currentSong = randomSong
-                                                        playSound(named: randomSong.fileName)
-                                                        isPlaying = true
-                                                    }
-                                                    */
-
-                                                    // Haptic feedback
-                                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                                }
-                                            }
+                        // Main meditation section
+                        VStack(spacing: 40) {
+                            // Meditation Orb - made bigger
+                            ZStack {
+                                Circle()
+                                    .fill(
+                                        RadialGradient(
+                                            gradient: Gradient(colors: [currentColor.opacity(0.4), currentColor.opacity(0.1)]),
+                                            center: .center,
+                                            startRadius: 10,
+                                            endRadius: 140
+                                        )
+                                    )
+                                    .frame(width: 280, height: 280)
+                                    .shadow(color: currentColor.opacity(0.2), radius: 15)
+                                    .overlay(
+                                        Button(action: playSoundForCurrentMood) {
+                                            Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                                                .font(.system(size: 42))
+                                                .foregroundColor(.white)
+                                                .shadow(color: .black.opacity(0.3), radius: 5)
                                         }
+                                    )
+                                    .animation(.easeInOut(duration: 0.5), value: currentColor)
+                            }
+                            
+                            // Song name display - with proper spacing
+                            VStack(spacing: 8) {
+                                if let song = currentSong {
+                                    Text("Now Playing")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.gray)
+                                    
+                                    Text(song.title)
+                                        .font(.system(size: 20, weight: .semibold))
+                                        .foregroundColor(.black)
+                                }
+                            }
+                            .frame(minHeight: 50) // Reserve space to prevent layout shifts
+                            
+                            // Mood selection section - in a card
+                            VStack(alignment: .leading, spacing: 20) {
+                                HStack {
+                                    Text("Select your mood")
+                                        .font(.system(size: 20, weight: .bold))
+                                        .foregroundColor(.black)
+                                    Spacer()
+                                }
+                                
+                                VStack(spacing: 24) {
+                                    // Mood labels - properly aligned
+                                    HStack {
+                                        ForEach(moods, id: \.id) { mood in
+                                            Text(mood.name)
+                                                .font(.system(size: 16, weight: .medium))
+                                                .foregroundColor(selectedMood == mood ? mood.color : .gray)
+                                                .frame(maxWidth: .infinity)
+                                                .animation(.easeInOut(duration: 0.3), value: selectedMood)
+                                        }
+                                    }
+                                    .padding(.horizontal, 8)
+                                    
+                                    // Improved slider - properly aligned
+                                    GeometryReader { geo in
+                                        ZStack(alignment: .leading) {
+                                            // Base track - transparent
+                                            Capsule()
+                                                .fill(Color.black.opacity(0.1))
+                                                .frame(height: 4)
+                                            
+                                            // Active track (up to current mood) - transparent
+                                            Capsule()
+                                                .fill((selectedMood?.color ?? Color.gray).opacity(0.3))
+                                                .frame(width: knobXPosition(geo: geo), height: 4)
+                                                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: selectedMood)
+                                            
+                                            // Knob - more prominent
+                                            Circle()
+                                                .fill(selectedMood?.color ?? Color.gray)
+                                                .frame(width: 24, height: 24)
+                                                .offset(x: knobXPosition(geo: geo) - 12, y: 0)
+                                                .shadow(color: (selectedMood?.color ?? Color.gray).opacity(0.3), radius: 4)
+                                                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: selectedMood)
+                                                .scaleEffect(selectedMood != nil ? 1.0 : 0.8)
+                                                .gesture(
+                                                    DragGesture(minimumDistance: 0)
+                                                        .onChanged { value in
+                                                            let stepWidth = geo.size.width / CGFloat(moods.count - 1)
+                                                            let index = Int(round(value.location.x / stepWidth))
 
-                                )
+                                                            if index >= 0 && index < moods.count {
+                                                                let newMood = moods[index]
+
+                                                                if newMood != selectedMood {
+                                                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                                                        selectedMood = newMood
+                                                                        currentColor = newMood.color
+                                                                    }
+
+                                                                    // Stop currently playing audio (if any)
+                                                                    if isPlaying {
+                                                                        audioPlayer?.stop()
+                                                                        isPlaying = false
+                                                                        currentSong = nil
+                                                                        phraseTimer?.cancel()
+                                                                    }
+
+                                                                    // Haptic feedback
+                                                                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                                                }
+                                                            }
+                                                        }
+                                                )
+                                        }
+                                    }
+                                    .frame(height: 40)
+                                    .padding(.horizontal, 8)
+                                }
+                            }
+                            .padding(20)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(Color.gray.opacity(0.05))
+                                    .stroke(Color.gray.opacity(0.1), lineWidth: 1)
+                            )
                         }
+                        .padding(.horizontal, 20)
+                        
+                        Spacer(minLength: 100) // Space for bottom navigation
                     }
-                    .frame(height: 50)
-                    .padding(.horizontal, 50)
                 }
-                .padding(.top, 80)
-
-                .ignoresSafeArea()
-           
-                Spacer(minLength: 50)
+                .navigationBarHidden(true)
+                .background(Color.white)
             }
             
+            // Fixed popup with darker background
             if showPhrasePopup {
-                    Color.black.opacity(0.1) // background dimmer
-                        .ignoresSafeArea()
-                        .transition(.opacity)
+                Color.black.opacity(0.7) // Much darker background dimmer
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                    .zIndex(1)
 
-                    popupView // our reusable popup
-                        .transition(.scale)
-                }
+                popupView // our reusable popup
+                    .transition(.scale.combined(with: .opacity))
+                    .zIndex(2)
+            }
             
-            // MARK: - Tutorial Overlay
+            // MARK: - Tutorial Overlay with darker background and updated steps
             if isTutorial {
                 ZStack {
-                    // Dim background with soft blur
-                    Color.gray.opacity(0.4)
+                    // Much darker background
+                    Color.black.opacity(0.8)
                         .ignoresSafeArea()
-                        .blur(radius: 8)
                         .transition(.opacity)
                         .zIndex(2)
-                        .ignoresSafeArea(edges: .all)
 
                     VStack(spacing: 24) {
                         Spacer()
@@ -320,21 +330,28 @@ struct StressReliefView: View {
                             Spacer()
                             
                             if tutorialStep == 0 {
-                                Text("Meditation Guide")
+                                Text("Calm Guide")
                                     .font(.largeTitle.weight(.semibold))
-                                    .foregroundColor(.black.opacity(0.7))
+                                    .foregroundColor(.white)
                                     .padding(.top, 10)
                                     .animation(.easeInOut(duration: 0.2), value: tutorialStep)
                             }
 
+                            // Updated tutorial steps
+                            let updatedSteps = [
+                                "Welcome to the Calm space - your meditation sanctuary.",
+                                "Select your current mood using the slider below. Each color represents a different emotional state.",
+                                "Tap the meditation circle to start playing calming music that matches your selected mood.",
+                                "While relaxing, you'll see Italian phrases appear. Practice speaking them to learn while you meditate.",
+                                "Get pronunciation feedback and enjoy your mindful learning journey. Ready to begin?"
+                            ]
                             
-                            Text(tutorialSteps[tutorialStep])
+                            Text(updatedSteps[tutorialStep])
                                 .font(.title3)
-                                .foregroundColor(.black.opacity(0.6))
-                                .fontWeight(.semibold)
-                            //.foregroundColor(.white.opacity(1))
+                                .foregroundColor(.white.opacity(0.9))
+                                .fontWeight(.medium)
                                 .multilineTextAlignment(.center)
-                                .padding(.horizontal, 50)
+                                .padding(.horizontal, 30)
                                 .frame(maxWidth: .infinity)
                                 .fixedSize(horizontal: false, vertical: true)
                             
@@ -342,10 +359,16 @@ struct StressReliefView: View {
                             
                             Button {
                                 withAnimation(.easeInOut(duration: 0.3)) {
-                                    advanceTutorial()
+                                    if tutorialStep < updatedSteps.count - 1 {
+                                        tutorialStep += 1
+                                    } else {
+                                        withAnimation(.easeInOut) {
+                                            isTutorial = false
+                                        }
+                                    }
                                 }
                             } label: {
-                                Text(tutorialStep == tutorialSteps.count - 1 ? "Got it!" : "Next")
+                                Text(tutorialStep == updatedSteps.count - 1 ? "Got it!" : "Next")
                                     .font(.headline)
                                     .foregroundColor(.black)
                                     .padding(.horizontal, 40)
@@ -357,14 +380,14 @@ struct StressReliefView: View {
                             
                         }
                         .padding(.vertical, 30)
-                        .frame(maxWidth: 720, maxHeight: 400)
+                        .frame(maxWidth: 320, maxHeight: 400)
                         .background(
                             RoundedRectangle(cornerRadius: 25)
                                 .fill(
                                     LinearGradient(
                                         colors: [
-                                            currentColor.opacity(0.8),
-                                            currentColor.opacity(0.8)
+                                            currentColor.opacity(0.9),
+                                            currentColor.opacity(0.7)
                                         ],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
@@ -373,22 +396,6 @@ struct StressReliefView: View {
                                 .shadow(color: currentColor.opacity(0.4), radius: 10, x: 0, y: 5)
                         )
                         .padding()
-
-                        // Next button outside the card
-//                        Button {
-//                            withAnimation(.easeInOut(duration: 0.3)) {
-//                                advanceTutorial()
-//                            }
-//                        } label: {
-//                            Text(tutorialStep == tutorialSteps.count - 1 ? "Got it!" : "Next")
-//                                .font(.headline)
-//                                .foregroundColor(currentColor)
-//                                .padding(.horizontal, 40)
-//                                .padding(.vertical, 12)
-//                                .background(Color.white)
-//                                .cornerRadius(12)
-//                                .shadow(radius: 4)
-//                        }
 
                         Spacer()
                     }
