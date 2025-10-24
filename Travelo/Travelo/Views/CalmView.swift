@@ -51,7 +51,7 @@ struct StressReliefView: View {
     @State private var speechSynthesizer = AVSpeechSynthesizer() // Used to pronounce Italian phrases aloud
 
     // MARK: - UI / Miscellaneous States
-    @State private var isTutorial = true                 // Whether the tutorial or onboarding overlay is visible
+    @State private var isTutorial = false                 // Whether the tutorial or onboarding overlay is visible
     @State private var tutorialStep = 0                   //
 
     // MARK: - Speech Recognition
@@ -349,11 +349,11 @@ struct StressReliefView: View {
                     .zIndex(2)
             }
             
-            // MARK: - Tutorial Overlay with Apple-like gray background
+            // MARK: - Tutorial Overlay with lighter background
             if isTutorial {
                 ZStack {
-                    // Apple-like gray background
-                    Color.gray.opacity(0.9)
+                    // Lighter, clearer background
+                    Color.gray.opacity(0.3)
                         .ignoresSafeArea()
                         .transition(.opacity)
                         .zIndex(2)
