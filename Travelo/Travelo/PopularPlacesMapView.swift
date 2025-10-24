@@ -33,6 +33,10 @@ struct PopularPlacesMapView: View {
                 Spacer()
                 
                 Button(action: {
+                    // Force refresh with haptic feedback
+                    let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
+                    impactFeedback.impactOccurred()
+                    
                     withAnimation(.easeInOut(duration: 0.3)) {
                         refreshPlaces()
                     }
@@ -63,26 +67,35 @@ struct PopularPlacesMapView: View {
             }
             .frame(height: 220)
             .clipShape(RoundedRectangle(cornerRadius: 12))
-            .padding(.horizontal, 20)
             .overlay(
-                // Loading overlay
+                // Loading overlay - properly contained within map bounds
                 Group {
                     if placesService.isLoading {
                         RoundedRectangle(cornerRadius: 12)
-                            .fill(Color("Primary").opacity(0.2))
+                            .fill(Color.black.opacity(0.6))
                             .overlay {
-                                VStack(spacing: 8) {
+                                VStack(spacing: 12) {
                                     ProgressView()
-                                        .tint(Color("Primary"))
+                                        .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                        .scaleEffect(1.2)
+                                    
                                     Text("Finding nearby places...")
-                                        .font(.caption)
-                                        .foregroundColor(Color("Primary"))
+                                        .font(.subheadline)
+                                        .foregroundColor(.white)
                                         .fontWeight(.medium)
                                 }
+                                .padding(16)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.black.opacity(0.3))
+                                        .blur(radius: 0.5)
+                                )
                             }
+                            .transition(.opacity)
                     }
                 }
             )
+            .padding(.horizontal, 20)
         }
         .sheet(isPresented: $showingPlaceDetail) {
             if let place = selectedPlace {
@@ -115,10 +128,22 @@ struct PopularPlacesMapView: View {
     }
     
     private func refreshPlaces() {
-        if let userLocation = placesService.userLocation {
-            placesService.searchNearbyPlaces(around: userLocation)
-        } else {
-            initializeLocation()
+        // Clear current places first for immediate visual feedback
+        if !placesService.isLoading {
+            Task {
+                await MainActor.run {
+                    placesService.nearbyPlaces = []
+                }
+                
+                // Small delay to show the loading state
+                try? await Task.sleep(nanoseconds: 300_000_000) // 0.3 seconds
+                
+                if let userLocation = placesService.userLocation {
+                    placesService.searchNearbyPlaces(around: userLocation)
+                } else {
+                    initializeLocation()
+                }
+            }
         }
     }
     
@@ -170,46 +195,47 @@ struct RealPlaceDetailSheet: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    // Photo section with real images
-                    if let details = detailsService.placeDetails, !details.imageUrls.isEmpty {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 12) {
-                                ForEach(Array(details.imageUrls.enumerated()), id: \.offset) { index, imageUrl in
-                                    AsyncImage(url: URL(string: imageUrl)) { image in
-                                        image
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(width: 250, height: 180)
-                                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                                    } placeholder: {
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .fill(Color("Primary").opacity(0.1))
-                                            .frame(width: 250, height: 180)
-                                            .overlay {
-                                                ProgressView()
-                                                    .tint(Color("Primary"))
-                                            }
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 20)
+                    // Visual header with place info
+                    VStack(spacing: 16) {
+                        // Large icon representing the place type
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color("Primary").opacity(0.2),
+                                            Color("Primary").opacity(0.1)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 100, height: 100)
+                            
+                            Image(systemName: getIconForCategory(place.pointOfInterestCategory))
+                                .font(.system(size: 40, weight: .medium))
+                                .foregroundColor(Color("Primary"))
                         }
-                    } else if detailsService.isLoading {
-                        // Loading placeholder
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(Color("Primary").opacity(0.1))
-                            .frame(height: 180)
-                            .overlay {
-                                VStack(spacing: 8) {
-                                    ProgressView()
-                                        .tint(Color("Primary"))
-                                    Text("Loading photos...")
-                                        .font(.caption)
-                                        .foregroundColor(Color("Primary"))
-                                }
+                        
+                        // Place type indicator
+                        VStack(spacing: 8) {
+                            if let category = place.pointOfInterestCategory {
+                                Text(formatCategoryName(category))
+                                    .font(.subheadline)
+                                    .fontWeight(.medium)
+                                    .foregroundColor(Color("Primary"))
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 6)
+                                    .background(Color("Primary").opacity(0.1))
+                                    .clipShape(Capsule())
                             }
-                            .padding(.horizontal, 20)
+                        }
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+                    .background(Color(.systemGray6).opacity(0.5))
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .padding(.horizontal, 20)
                     
                     VStack(alignment: .leading, spacing: 16) {
                         // Place name, rating, and category
@@ -260,41 +286,6 @@ struct RealPlaceDetailSheet: View {
                                         .padding(.vertical, 4)
                                         .background(Color.green.opacity(0.1))
                                         .clipShape(Capsule())
-                                }
-                            }
-                        }
-                        
-                        // Description from API
-                        if let details = detailsService.placeDetails {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("About")
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
-                                
-                                Text(details.description)
-                                    .font(.body)
-                                    .foregroundColor(.primary)
-                                    .lineSpacing(2)
-                            }
-                        } else if detailsService.isLoading {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("About")
-                                    .font(.headline)
-                                    .foregroundColor(.primary)
-                                
-                                // Loading placeholder for description
-                                VStack(alignment: .leading, spacing: 4) {
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(height: 12)
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(height: 12)
-                                        .frame(width: UIScreen.main.bounds.width * 0.7)
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .fill(Color.gray.opacity(0.3))
-                                        .frame(height: 12)
-                                        .frame(width: UIScreen.main.bounds.width * 0.8)
                                 }
                             }
                         }
@@ -422,6 +413,46 @@ struct RealPlaceDetailSheet: View {
         let result = cleanName.replacingOccurrences(of: "([a-z])([A-Z])", with: "$1 $2", options: .regularExpression)
         
         return result.capitalized
+    }
+    
+    // Get appropriate icon for place category
+    private func getIconForCategory(_ category: MKPointOfInterestCategory?) -> String {
+        guard let category = category else { return "building.2" }
+        
+        let categoryString = category.rawValue.replacingOccurrences(of: "MKPOICategory", with: "").lowercased()
+        
+        switch categoryString {
+        case let c where c.contains("restaurant") || c.contains("food"):
+            return "fork.knife"
+        case let c where c.contains("museum") || c.contains("gallery"):
+            return "building.columns"
+        case let c where c.contains("park") || c.contains("garden"):
+            return "leaf"
+        case let c where c.contains("shop") || c.contains("store") || c.contains("retail"):
+            return "bag"
+        case let c where c.contains("hotel") || c.contains("lodging"):
+            return "bed.double"
+        case let c where c.contains("hospital") || c.contains("medical"):
+            return "cross"
+        case let c where c.contains("school") || c.contains("university"):
+            return "graduationcap"
+        case let c where c.contains("bank") || c.contains("atm"):
+            return "building.columns"
+        case let c where c.contains("gas") || c.contains("fuel"):
+            return "fuelpump"
+        case let c where c.contains("library"):
+            return "books.vertical"
+        case let c where c.contains("church") || c.contains("religious"):
+            return "building"
+        case let c where c.contains("theater") || c.contains("entertainment"):
+            return "theatermasks"
+        case let c where c.contains("airport"):
+            return "airplane"
+        case let c where c.contains("subway") || c.contains("transit"):
+            return "tram"
+        default:
+            return "building.2"
+        }
     }
 }
 

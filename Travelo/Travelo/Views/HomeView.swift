@@ -265,7 +265,7 @@ struct HomeView: View {
                     PopularPlacesMapView()
                         .padding(.top, 24)
                     
-                    Spacer(minLength: 100) // Space for bottom navigation
+                    Spacer(minLength: 30) // Reduced space for bottom navigation
                 }
             }
             .navigationBarHidden(true)

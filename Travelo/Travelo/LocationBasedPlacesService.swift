@@ -47,7 +47,16 @@ class LocationBasedPlacesService: NSObject, ObservableObject {
             "park",
             "landmark",
             "shopping",
-            "entertainment"
+            "entertainment",
+            "cafe",
+            "hotel",
+            "gas station",
+            "pharmacy",
+            "bank",
+            "hospital",
+            "library",
+            "church",
+            "school"
         ]
         
         var allPlaces: [MKMapItem] = []
@@ -60,7 +69,7 @@ class LocationBasedPlacesService: NSObject, ObservableObject {
             request.naturalLanguageQuery = searchType
             request.region = MKCoordinateRegion(
                 center: coordinate,
-                span: MKCoordinateSpan(latitudeDelta: 0.1, longitudeDelta: 0.1)
+                span: MKCoordinateSpan(latitudeDelta: 0.15, longitudeDelta: 0.15)
             )
             
             let search = MKLocalSearch(request: request)
@@ -68,15 +77,15 @@ class LocationBasedPlacesService: NSObject, ObservableObject {
                 defer { dispatchGroup.leave() }
                 
                 if let response = response {
-                    // Filter out places that are too far and get top rated ones
+                    // Filter out places that are too far and get more results per category
                     let filteredPlaces = response.mapItems
                         .filter { item in
                             guard let location = item.placemark.location else { return false }
                             let distance = CLLocation(latitude: coordinate.latitude, longitude: coordinate.longitude)
                                 .distance(from: location)
-                            return distance <= 50000 // Within 50km
+                            return distance <= 75000 // Within 75km (expanded)
                         }
-                        .prefix(3) // Limit to top 3 per category
+                        .prefix(5) // Increased to top 5 per category
                     
                     allPlaces.append(contentsOf: filteredPlaces)
                 }
@@ -87,7 +96,7 @@ class LocationBasedPlacesService: NSObject, ObservableObject {
             // Remove duplicates and limit total results
             let uniquePlaces = Array(Set(allPlaces.map { $0.name ?? "" }))
                 .compactMap { name in allPlaces.first { $0.name == name } }
-                .prefix(12)
+                .prefix(24) // Increased from 12 to 24 places
             
             self.nearbyPlaces = Array(uniquePlaces)
             self.isLoading = false
