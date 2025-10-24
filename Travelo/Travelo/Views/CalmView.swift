@@ -51,7 +51,7 @@ struct StressReliefView: View {
     @State private var speechSynthesizer = AVSpeechSynthesizer() // Used to pronounce Italian phrases aloud
 
     // MARK: - UI / Miscellaneous States
-    @State private var isTutorial = false                 // Whether the tutorial or onboarding overlay is visible
+    @State private var isTutorial = true                 // Whether the tutorial or onboarding overlay is visible
     @State private var tutorialStep = 0                   //
 
     // MARK: - Speech Recognition
@@ -278,6 +278,10 @@ struct StressReliefView: View {
 
                                                                     // If playing, smoothly transition to new song
                                                                     if isPlaying {
+                                                                        // Stop current song completely before starting new one
+                                                                        audioPlayer?.stop()
+                                                                        audioPlayer = nil
+                                                                        
                                                                         if let songs = moodSongs[newMood.key],
                                                                            let randomSong = songs.randomElement() {
                                                                             currentSong = randomSong
@@ -356,48 +360,42 @@ struct StressReliefView: View {
 
                     // Centered popup card
                     VStack(spacing: 0) {
-                        // Tutorial content card - smaller popup style
-                        VStack(spacing: 0) {
+                        // Tutorial content card - compact layout
+                        VStack(spacing: 20) {
                             
-                            // Main content area - properly centered
-                            VStack(spacing: 0) {
-                                Spacer() // This pushes content to center
+                            // Main content area - properly centered with no extra space
+                            VStack(spacing: 16) {
+                                // Show icon for all steps
+                                Image(systemName: getCurrentTutorialIcon())
+                                    .font(.system(size: 40))
+                                    .foregroundColor(Color("Primary"))
                                 
-                                VStack(spacing: 16) {
-                                    // Show icon for all steps
-                                    Image(systemName: getCurrentTutorialIcon())
-                                        .font(.system(size: 40))
-                                        .foregroundColor(tutorialStep == 0 ? .green : .blue)
+                                VStack(spacing: 8) {
+                                    Text(getCurrentTutorialTitle())
+                                        .font(.system(size: 18, weight: .semibold))
+                                        .foregroundColor(.black)
+                                        .multilineTextAlignment(.center)
                                     
-                                    VStack(spacing: 8) {
-                                        Text(getCurrentTutorialTitle())
-                                            .font(.system(size: 18, weight: .semibold))
-                                            .foregroundColor(.black)
-                                            .multilineTextAlignment(.center)
-                                        
-                                        Text(getCurrentTutorialDescription())
-                                            .font(.system(size: 14, weight: .medium))
-                                            .foregroundColor(.gray)
-                                            .multilineTextAlignment(.center)
-                                            .lineLimit(nil)
-                                    }
-                                    .padding(.horizontal, 24)
+                                    Text(getCurrentTutorialDescription())
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.gray)
+                                        .multilineTextAlignment(.center)
+                                        .lineLimit(nil)
+                                        .fixedSize(horizontal: false, vertical: true)
                                 }
-                                
-                                Spacer() // This keeps content centered
+                                .padding(.horizontal, 24)
                             }
-                            .frame(height: 180) // Consistent height for all steps
+                            .padding(.vertical, 20)
                             
                             // Progress indicator
                             HStack(spacing: 8) {
                                 ForEach(0..<5) { index in
                                     Circle()
-                                        .fill(index == tutorialStep ? Color.blue : Color.gray.opacity(0.3))
+                                        .fill(index == tutorialStep ? Color("Primary") : Color.gray.opacity(0.3))
                                         .frame(width: 8, height: 8)
                                         .animation(.easeInOut(duration: 0.3), value: tutorialStep)
                                 }
                             }
-                            .padding(.vertical, 16)
                             
                             // Button area
                             Button {
@@ -416,13 +414,13 @@ struct StressReliefView: View {
                                     .foregroundColor(.white)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 14)
-                                    .background(Color.blue)
+                                    .background(Color("Primary"))
                                     .cornerRadius(22)
                             }
                             .padding(.horizontal, 24)
-                            .padding(.bottom, 24)
                         }
-                        .frame(width: 340, height: 380) // Slightly bigger for better content fit
+                        .frame(width: 340) // Fixed width only
+                        .padding(.vertical, 20) // Controlled padding
                         .background(
                             RoundedRectangle(cornerRadius: 16)
                                 .fill(Color.white)
