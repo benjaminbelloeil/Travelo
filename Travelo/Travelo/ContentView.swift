@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import Combine
 
 struct ContentView: View {
     @State private var selectedTab: Tab = .home
@@ -57,22 +56,43 @@ struct ContentView: View {
                 .environmentObject(countryManager)
                 .transition(.opacity) // Simple fade out, no sliding
             } else {
-                VStack(spacing: 0) {
-                    // Main content area with simple fade transitions
-                    ZStack {
-                        tabView(for: selectedTab)
-                            .id(selectedTab)
-                            .transition(.opacity) // Simple fade transition for tabs
-                            .animation(.easeInOut(duration: 0.2), value: selectedTab)
+                TabView(selection: $selectedTab) {
+                    HomeView {
+                        // Callback when user taps on country name to change country
+                        withAnimation(.spring(response: 0.5, dampingFraction: 0.9, blendDuration: 0.2)) {
+                            showCountrySelectionFromHome = true
+                        }
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .tabItem {
+                        Image(systemName: Tab.home.icon)
+                        Text(Tab.home.rawValue)
+                    }
+                    .tag(Tab.home)
                     
-                    // Bottom navigation
-                    BottomNavigationView(selectedTab: $selectedTab)
+                    MapView()
+                        .tabItem {
+                            Image(systemName: Tab.map.icon)
+                            Text(Tab.map.rawValue)
+                        }
+                        .tag(Tab.map)
+                    
+                    GuideView()
+                        .tabItem {
+                            Image(systemName: Tab.guide.icon)
+                            Text(Tab.guide.rawValue)
+                        }
+                        .tag(Tab.guide)
+                    
+                    ProfileView()
+                        .tabItem {
+                            Image(systemName: Tab.profile.icon)
+                            Text(Tab.profile.rawValue)
+                        }
+                        .tag(Tab.profile)
                 }
+                .accentColor(Color("Primary"))
                 .environmentObject(countryManager)
                 .environmentObject(stepStateManager)
-                .ignoresSafeArea(.keyboard, edges: .bottom)
                 .transition(.asymmetric(
                     insertion: .opacity, // Simple fade in for main app
                     removal: .opacity
@@ -84,25 +104,6 @@ struct ContentView: View {
                     }
                 }
             }
-        }
-    }
-    
-    @ViewBuilder
-    private func tabView(for tab: Tab) -> some View {
-        switch tab {
-        case .home:
-            HomeView {
-                // Callback when user taps on country name to change country
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.9, blendDuration: 0.2)) {
-                    showCountrySelectionFromHome = true
-                }
-            }
-        case .map:
-            MapView()
-        case .guide:
-            GuideView()
-        case .profile:
-            ProfileView()
         }
     }
 }
