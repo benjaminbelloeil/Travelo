@@ -32,7 +32,7 @@ struct StepRow: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: .top, spacing: 8) {
                 // Step Number
                 VStack {
                     Text("\(item.stepNumber)")
@@ -40,7 +40,7 @@ struct StepRow: View {
                         .foregroundColor(Color.black)
                         .multilineTextAlignment(.center)
                 }
-                .frame(width: 60)
+                .frame(width: 44)
                 
                 // Timeline indicator
                 ZStack(alignment: .top) {
@@ -102,7 +102,7 @@ struct StepRow: View {
                     .scaleEffect(isActive ? 1.1 : 1.0)
                     .animation(.easeInOut(duration: 0.3), value: isActive)
                 }
-                .frame(width: 32)
+                .frame(width: 28)
                 
                 // Content
                 VStack(alignment: .leading, spacing: 6) {
@@ -128,7 +128,7 @@ struct StepRow: View {
                         .multilineTextAlignment(.leading)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.trailing, 8)
+                .padding(.trailing, 4)
                 
                 // Interactive status button
                 Button(action: handleToggle) {

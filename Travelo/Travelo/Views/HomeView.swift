@@ -12,6 +12,9 @@ struct HomeView: View {
     @EnvironmentObject var countryManager: CountryManager
     @EnvironmentObject var stepStateManager: StepStateManager
     
+    // State for navigation through step groups
+    @State private var currentStepGroup: Int = 0
+    
     // Callback to notify when user taps on country name to change country
     var onCountryTap: (() -> Void)?
     
@@ -21,7 +24,23 @@ struct HomeView: View {
     }
     
     var visibleSteps: [StepItem] {
-        stepStateManager.getVisibleStepsForHome(allSteps: allSteps)
+        let stepsPerGroup = 3
+        let startIndex = currentStepGroup * stepsPerGroup
+        let endIndex = min(startIndex + stepsPerGroup, allSteps.count)
+        return Array(allSteps[startIndex..<endIndex])
+    }
+    
+    var totalGroups: Int {
+        let stepsPerGroup = 3
+        return (allSteps.count + stepsPerGroup - 1) / stepsPerGroup
+    }
+    
+    var canNavigateBack: Bool {
+        return currentStepGroup > 0
+    }
+    
+    var canNavigateForward: Bool {
+        return currentStepGroup < totalGroups - 1
     }
     
     var body: some View {
@@ -148,11 +167,49 @@ struct HomeView: View {
                     
                     // Your next steps section
                     VStack(alignment: .leading, spacing: 20) {
-                        HStack {
+                        HStack(alignment: .center) {
                             Text("Your next steps")
                                 .font(.system(size: 24, weight: .bold))
                                 .foregroundColor(.black)
+                            
                             Spacer()
+                            
+                            // Navigation arrows
+                            HStack(spacing: 12) {
+                                // Back arrow
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        currentStepGroup = max(0, currentStepGroup - 1)
+                                    }
+                                }) {
+                                    Image(systemName: "chevron.left")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(canNavigateBack ? .black : .gray.opacity(0.4))
+                                        .frame(width: 32, height: 32)
+                                        .background(
+                                            Circle()
+                                                .fill(.gray.opacity(canNavigateBack ? 0.15 : 0.05))
+                                        )
+                                }
+                                .disabled(!canNavigateBack)
+                                
+                                // Forward arrow
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        currentStepGroup = min(totalGroups - 1, currentStepGroup + 1)
+                                    }
+                                }) {
+                                    Image(systemName: "chevron.right")
+                                        .font(.system(size: 16, weight: .medium))
+                                        .foregroundColor(canNavigateForward ? .black : .gray.opacity(0.4))
+                                        .frame(width: 32, height: 32)
+                                        .background(
+                                            Circle()
+                                                .fill(.gray.opacity(canNavigateForward ? 0.15 : 0.05))
+                                        )
+                                }
+                                .disabled(!canNavigateForward)
+                            }
                         }
                         .padding(.horizontal, 20)
                         
@@ -164,6 +221,12 @@ struct HomeView: View {
                                     onToggle: {
                                         withAnimation(.easeInOut(duration: 0.3)) {
                                             stepStateManager.toggle(step.id)
+                                            
+                                            // Check if we just completed the last step in the current group
+                                            // and if there are more groups to navigate to
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                                checkForAutoNavigation()
+                                            }
                                         }
                                     },
                                     index: index,
@@ -186,10 +249,49 @@ struct HomeView: View {
                 if let selectedCountry = countryManager.selectedCountry {
                     stepStateManager.updateCountry(selectedCountry.code, templateVersion: 1)
                 }
+                // Navigate to the group with the first incomplete step
+                updateCurrentStepGroup()
             }
             .onChange(of: countryManager.selectedCountry?.code) { newCode in
                 if let code = newCode {
                     stepStateManager.updateCountry(code, templateVersion: 1)
+                    // Reset to the appropriate group when country changes
+                    currentStepGroup = 0
+                    updateCurrentStepGroup()
+                }
+            }
+        }
+    }
+    
+    // Helper function to navigate to the group containing the first incomplete step
+    private func updateCurrentStepGroup() {
+        let stepsPerGroup = 3
+        
+        // Find first incomplete step
+        if let firstIncompleteIndex = allSteps.firstIndex(where: { !stepStateManager.isDone($0.id) }) {
+            let targetGroup = firstIncompleteIndex / stepsPerGroup
+            currentStepGroup = min(targetGroup, totalGroups - 1)
+        } else if !allSteps.isEmpty {
+            // All steps complete, show the last group
+            currentStepGroup = max(0, totalGroups - 1)
+        }
+    }
+    
+    // Helper function to check if we should automatically navigate after completing a step
+    private func checkForAutoNavigation() {
+        let stepsPerGroup = 3
+        
+        // Check if all steps in current group are completed
+        let allCurrentGroupStepsCompleted = visibleSteps.allSatisfy { step in
+            stepStateManager.isDone(step.id)
+        }
+        
+        // If all steps in current group are completed and there are more groups ahead
+        if allCurrentGroupStepsCompleted && canNavigateForward {
+            // Automatically move to next group after a short delay for better UX
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                withAnimation(.easeInOut(duration: 0.4)) {
+                    currentStepGroup = min(totalGroups - 1, currentStepGroup + 1)
                 }
             }
         }
