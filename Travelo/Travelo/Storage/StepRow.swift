@@ -33,11 +33,11 @@ struct StepRow: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: 12) {
-                // Date
+                // Step Number
                 VStack {
-                    Text(item.formattedDate)
-                        .font(.system(size: 18))
-                        .foregroundColor(.black)
+                    Text("\(item.stepNumber)")
+                        .font(.system(size: 24))
+                        .foregroundColor(Color.black)
                         .multilineTextAlignment(.center)
                 }
                 .frame(width: 60)

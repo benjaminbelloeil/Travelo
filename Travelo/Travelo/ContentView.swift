@@ -9,11 +9,15 @@ import SwiftUI
 
 struct ContentView: View {
     @State private var selectedTab: Tab = .home
-    @State private var hasSeenStartThisSession: Bool = false
     @State private var showCountrySelection: Bool = false
     @State private var showCountrySelectionFromHome: Bool = false
     @StateObject private var countryManager = CountryManager()
     @StateObject private var stepStateManager = StepStateManager()
+    
+    // Computed property to determine if we should show onboarding
+    private var shouldShowOnboarding: Bool {
+        !countryManager.hasCompletedOnboarding
+    }
     
     var body: some View {
         ZStack {
@@ -31,8 +35,8 @@ struct ContentView: View {
                     removal: .move(edge: .leading).combined(with: .opacity)     // Slides out to left (forward navigation)
                 ))
                 .zIndex(2)
-            } else if !hasSeenStartThisSession && !showCountrySelection {
-                // Start screen shown every app open
+            } else if shouldShowOnboarding && !showCountrySelection {
+                // Start screen shown for new users
                 StartView {
                     // Show country selection when START is tapped
                     withAnimation(.spring(response: 0.6, dampingFraction: 0.85, blendDuration: 0.1)) {
@@ -43,13 +47,12 @@ struct ContentView: View {
                     insertion: .opacity,
                     removal: .move(edge: .leading).combined(with: .opacity)
                 ))
-            } else if showCountrySelection && !hasSeenStartThisSession {
-                // Country selection view
+            } else if showCountrySelection && shouldShowOnboarding {
+                // Country selection view for new users
                 CountrySelectionView {
                     // When location is chosen, go to main app
                     withAnimation(.spring(response: 0.5, dampingFraction: 0.9, blendDuration: 0.2)) {
                         selectedTab = .home
-                        hasSeenStartThisSession = true
                         showCountrySelection = false
                     }
                 }
@@ -97,12 +100,18 @@ struct ContentView: View {
                     insertion: .opacity, // Simple fade in for main app
                     removal: .opacity
                 ))
-                .animation(.easeInOut(duration: 0.45), value: hasSeenStartThisSession)
+                .animation(.easeInOut(duration: 0.45), value: shouldShowOnboarding)
                 .onChange(of: countryManager.selectedCountry?.code) { newCode in
                     if let code = newCode {
                         stepStateManager.updateCountry(code, templateVersion: 1)
                     }
                 }
+            }
+        }
+        .onAppear {
+            // Initialize step state manager with the saved country if available
+            if let selectedCountry = countryManager.selectedCountry {
+                stepStateManager.updateCountry(selectedCountry.code, templateVersion: 1)
             }
         }
     }
