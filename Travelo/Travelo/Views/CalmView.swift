@@ -354,40 +354,55 @@ struct StressReliefView: View {
                         .transition(.opacity)
                         .zIndex(2)
 
-                    VStack(spacing: 24) {
-                        Spacer()
-
-                        // Tutorial content card - Apple style
-                        VStack(spacing: 20) {
+                    // Centered popup card
+                    VStack(spacing: 0) {
+                        // Tutorial content card - smaller popup style
+                        VStack(spacing: 0) {
                             
-                            if tutorialStep == 0 {
-                                Text("Calm Guide")
-                                    .font(.system(size: 32, weight: .bold))
-                                    .foregroundColor(.black)
-                                    .padding(.top, 20)
+                            // Main content area - properly centered
+                            VStack(spacing: 0) {
+                                Spacer() // This pushes content to center
+                                
+                                VStack(spacing: 16) {
+                                    // Show icon for all steps
+                                    Image(systemName: getCurrentTutorialIcon())
+                                        .font(.system(size: 40))
+                                        .foregroundColor(tutorialStep == 0 ? .green : .blue)
+                                    
+                                    VStack(spacing: 8) {
+                                        Text(getCurrentTutorialTitle())
+                                            .font(.system(size: 18, weight: .semibold))
+                                            .foregroundColor(.black)
+                                            .multilineTextAlignment(.center)
+                                        
+                                        Text(getCurrentTutorialDescription())
+                                            .font(.system(size: 14, weight: .medium))
+                                            .foregroundColor(.gray)
+                                            .multilineTextAlignment(.center)
+                                            .lineLimit(nil)
+                                    }
+                                    .padding(.horizontal, 24)
+                                }
+                                
+                                Spacer() // This keeps content centered
                             }
-
-                            // Updated tutorial steps
-                            let updatedSteps = [
-                                "Welcome to the Calm space - your meditation sanctuary.",
-                                "Select your current mood using the slider below. Each color represents a different emotional state.",
-                                "Tap the meditation circle to start playing calming music that matches your selected mood.",
-                                "While relaxing, you'll see Italian phrases appear. Practice speaking them to learn while you meditate.",
-                                "Get pronunciation feedback and enjoy your mindful learning journey. Ready to begin?"
-                            ]
+                            .frame(height: 180) // Consistent height for all steps
                             
-                            Text(updatedSteps[tutorialStep])
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(.black.opacity(0.8))
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 40)
-                                .lineLimit(nil)
+                            // Progress indicator
+                            HStack(spacing: 8) {
+                                ForEach(0..<5) { index in
+                                    Circle()
+                                        .fill(index == tutorialStep ? Color.blue : Color.gray.opacity(0.3))
+                                        .frame(width: 8, height: 8)
+                                        .animation(.easeInOut(duration: 0.3), value: tutorialStep)
+                                }
+                            }
+                            .padding(.vertical, 16)
                             
-                            Spacer()
-                            
+                            // Button area
                             Button {
                                 withAnimation(.easeInOut(duration: 0.3)) {
-                                    if tutorialStep < updatedSteps.count - 1 {
+                                    if tutorialStep < 4 { // 5 steps total (0-4)
                                         tutorialStep += 1
                                     } else {
                                         withAnimation(.easeInOut) {
@@ -396,27 +411,25 @@ struct StressReliefView: View {
                                     }
                                 }
                             } label: {
-                                Text(tutorialStep == updatedSteps.count - 1 ? "Get Started" : "Continue")
-                                    .font(.system(size: 18, weight: .semibold))
+                                Text(tutorialStep == 4 ? "Start Meditating" : "Continue")
+                                    .font(.system(size: 16, weight: .semibold))
                                     .foregroundColor(.white)
-                                    .padding(.horizontal, 50)
-                                    .padding(.vertical, 16)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 14)
                                     .background(Color.blue)
-                                    .cornerRadius(25)
+                                    .cornerRadius(22)
                             }
-                            .padding(.bottom, 20)
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 24)
                         }
-                        .frame(maxWidth: 350, maxHeight: 450)
+                        .frame(width: 340, height: 380) // Slightly bigger for better content fit
                         .background(
-                            RoundedRectangle(cornerRadius: 20)
+                            RoundedRectangle(cornerRadius: 16)
                                 .fill(Color.white)
-                                .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+                                .shadow(color: .black.opacity(0.15), radius: 12, x: 0, y: 6)
                         )
-                        .padding()
-
-                        Spacer()
                     }
-                    .transition(.opacity)
+                    .transition(.scale.combined(with: .opacity))
                     .zIndex(3)
                 }
             }
@@ -886,6 +899,27 @@ struct StressReliefView: View {
         return CGFloat(index) * stepWidth
     }
     
+    // MARK: - Tutorial Helpers
+    private let tutorialData: [(icon: String, title: String, description: String)] = [
+        ("leaf", "Welcome to Calm", "Your meditation sanctuary for relaxation and Italian language learning."),
+        ("slider.horizontal.3", "Choose your emotional state", "Use the mood slider to match your current feelings. Happy, Sad, or Energetic - each has unique calming music."),
+        ("play.circle", "Start your meditation session", "Tap the large meditation circle to begin playing music tailored to your selected mood and emotional needs."),
+        ("message", "Practice Italian phrases mindfully", "During your session, Italian phrases will appear. This combines meditation with gentle language learning."),
+        ("checkmark.circle", "Get pronunciation feedback", "Speak the phrases aloud to practice pronunciation and receive helpful feedback on your Italian speaking skills.")
+    ]
+    
+    private func getCurrentTutorialIcon() -> String {
+        tutorialData[tutorialStep].icon
+    }
+    
+    private func getCurrentTutorialTitle() -> String {
+        tutorialData[tutorialStep].title
+    }
+    
+    private func getCurrentTutorialDescription() -> String {
+        tutorialData[tutorialStep].description
+    }
+    
     //MARK: - Show a Tutorial Screen for new user
 
     private func showTutorial() {
@@ -896,7 +930,7 @@ struct StressReliefView: View {
     }
 
     private func advanceTutorial() {
-        if tutorialStep < tutorialSteps.count - 1 {
+        if tutorialStep < 4 { // 5 steps total (0-4)
             tutorialStep += 1
         } else {
             withAnimation(.easeInOut) {
