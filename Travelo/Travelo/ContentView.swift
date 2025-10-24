@@ -72,7 +72,7 @@ struct ContentView: View {
                     }
                     .tag(Tab.home)
                     
-                    MapView()
+                    StressReliefView()
                         .tabItem {
                             Image(systemName: Tab.map.icon)
                             Text(Tab.map.rawValue)
