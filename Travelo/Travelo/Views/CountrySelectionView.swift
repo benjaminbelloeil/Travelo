@@ -32,11 +32,11 @@ struct CountrySelectionView: View {
                 Color.black.opacity(0.35)
                     .ignoresSafeArea(.all)
                 
-                // Foreground content
+                // Foreground content - positioned to match START button layout
                 VStack(spacing: 0) {
                     Spacer() // pushes content to bottom
                     
-                    // Title + description for the selected page
+                    // Title + description for the selected page  
                     VStack(alignment: .leading, spacing: 14) {
                         Text(selected.title)
                             .font(.system(size: 40, weight: .heavy))
@@ -51,9 +51,7 @@ struct CountrySelectionView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 28)
-                    
-                    // Spacing before indicators and button (reduced)
-                    Spacer().frame(height: 30)
+                    .padding(.bottom, 20) // Add bottom padding to push everything lower
                     
                     // Page indicators above the button
                     HStack(spacing: 8) {
@@ -80,9 +78,9 @@ struct CountrySelectionView: View {
                                     .fill(.ultraThinMaterial)
                             )
                     )
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 20) // Increased spacing above button
                     
-                    // Choose Location button (moved closer to bottom)
+                    // Choose Location button positioned to match START button height exactly
                     Button(action: { 
                         // Select the current country
                         countryManager.selectCountry(CountryManager.availableCountries[selectedIndex])
@@ -100,7 +98,7 @@ struct CountrySelectionView: View {
                             )
                     }
                     .padding(.horizontal, 28)
-                    .padding(.top, 20)
+                    .padding(.bottom, -50) // Exact match with START button padding
                     
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height, alignment: .bottom)
