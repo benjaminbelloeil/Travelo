@@ -16,6 +16,9 @@ class CountryManager: ObservableObject {
         }
     }
     
+    @Published var locationService = LocationService()
+    private var cancellables = Set<AnyCancellable>()
+    
     private let userDefaults = UserDefaults.standard
     private let selectedCountryKey = "selectedCountryCode"
     private let hasCompletedOnboardingKey = "hasCompletedOnboarding"
@@ -46,8 +49,32 @@ class CountryManager: ObservableObject {
         )
     ]
     
+    // Computed property to get the appropriate location tag
+    var currentLocationTag: String {
+        // If location is available and we have the user's current location, use that
+        if locationService.isLocationAvailable, let currentTag = locationService.currentLocationTag {
+            return currentTag
+        }
+        // Otherwise fall back to the selected country's default location tag
+        return selectedCountry?.locationTag ?? "Select Country"
+    }
+    
     init() {
         loadSelectedCountry()
+        setupLocationUpdates()
+    }
+    
+    private func setupLocationUpdates() {
+        // Listen to location service updates
+        locationService.objectWillChange.sink { [weak self] _ in
+            self?.objectWillChange.send()
+        }
+        .store(in: &cancellables)
+    }
+    
+    func requestLocationOnFirstLaunch() {
+        // Request location permission when user first opens the app
+        locationService.requestLocationPermission()
     }
     
     func selectCountry(_ country: CountryInfo) {

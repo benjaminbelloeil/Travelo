@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import CoreLocation
 
 struct ContentView: View {
     @State private var selectedTab: Tab = .home
@@ -71,6 +72,13 @@ struct ContentView: View {
                         Text(Tab.home.rawValue)
                     }
                     .tag(Tab.home)
+                    .onAppear {
+                        // Request location permission when user first reaches HomeView
+                        if !countryManager.locationService.isLocationAvailable &&
+                           countryManager.locationService.authorizationStatus == .notDetermined {
+                            countryManager.requestLocationOnFirstLaunch()
+                        }
+                    }
                     
                     StressReliefView()
                         .tabItem {

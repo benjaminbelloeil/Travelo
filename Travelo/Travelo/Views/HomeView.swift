@@ -120,7 +120,7 @@ struct HomeView: View {
                                             .font(.system(size: 12))
                                             .foregroundColor(.white)
                                         
-                                        Text(countryManager.selectedCountry?.locationTag ?? "Select Country")
+                                        Text(countryManager.currentLocationTag)
                                             .font(.system(size: 14, weight: .medium))
                                             .foregroundColor(.white)
                                     }
