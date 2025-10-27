@@ -20,15 +20,37 @@ struct ContentView: View {
     // Add a state to force UI refresh when needed
     @State private var refreshTrigger = false
     
+    // State for onboarding flow
+    @State private var hasCompletedOnboarding = UserDefaults.standard.bool(forKey: "hasCompletedAppOnboarding")
+    
     // Computed property to determine if we should show onboarding
     private var shouldShowOnboarding: Bool {
         !countryManager.hasCompletedOnboarding
     }
     
+    // Computed property to determine if we should show app intro onboarding
+    private var shouldShowAppOnboarding: Bool {
+        !hasCompletedOnboarding
+    }
+    
     var body: some View {
         ZStack {
+            // Show App Onboarding first (only for first-time users)
+            if shouldShowAppOnboarding {
+                ImprovedOnBoardingView {
+                    // When onboarding is complete, move to country selection
+                    withAnimation(.spring(response: 0.5, dampingFraction: 0.9)) {
+                        hasCompletedOnboarding = true
+                        UserDefaults.standard.set(true, forKey: "hasCompletedAppOnboarding")
+                        showCountrySelection = true
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(10)
+            }
+            
             // Show TabView only when not in onboarding or country selection
-            if !shouldShowOnboarding && !showCountrySelection && !showCountrySelectionFromHome {
+            else if !shouldShowOnboarding && !showCountrySelection && !showCountrySelectionFromHome {
                 TabView(selection: $selectedTab) {
                     HomeView()
                     .tabItem {
@@ -109,8 +131,8 @@ struct ContentView: View {
                 .zIndex(3)
             }
             
-            if shouldShowOnboarding && !showCountrySelection {
-                // Start screen shown for new users
+            if shouldShowOnboarding && !showCountrySelection && !shouldShowAppOnboarding {
+                // Start screen shown for users who completed app onboarding but not country selection
                 StartView {
                     // Show country selection when START is tapped
                     withAnimation(.spring(response: 0.6, dampingFraction: 0.85, blendDuration: 0.1)) {
@@ -124,7 +146,7 @@ struct ContentView: View {
                 .zIndex(2)
             }
             
-            if showCountrySelection && shouldShowOnboarding {
+            if showCountrySelection && (shouldShowOnboarding || shouldShowAppOnboarding) {
                 // Country selection view for new users
                 CountrySelectionView {
                     // When location is chosen, go to main app
